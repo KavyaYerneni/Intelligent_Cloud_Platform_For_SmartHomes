@@ -8,12 +8,31 @@ export const identifier=z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/);
 export const timestamp=z.string().datetime({offset:true});
 export function validTime(value,now=Date.now()){const ms=Date.parse(value);if(!Number.isFinite(ms)||ms<now-86400000||ms>now+60000)fail(400,'TIME_WINDOW','Timestamp must be within the last 24 hours and no more than 60 seconds ahead.');return ms;}
 export const eventSchema=z.object({schemaVersion:z.literal('1.0').default('1.0'),eventId:identifier,correlationId:identifier,houseId:identifier,deviceId:identifier,type:z.enum(['smoke_alarm','human_help_sound','unusual_sound','normal_appliance_sound','telemetry']),occurredAt:timestamp,source:z.enum(['simulator','device','model']),confidence:z.number().min(0).max(1).nullable(),payload:z.record(z.string(),z.unknown()),modelVersion:text.default('v1')}).strict();
+// Component 3 §3.6 configuration table. classify(), GET /api/v1/catalog and the
+// simulator's outcome preview all read this one table, so they cannot disagree.
+export const ALERT_RULES=[
+ {type:'smoke_alarm',rule:'safety',severity:'CRITICAL',window:300,model:'deterministic-rules',explanation:'Deterministic smoke safety rule',notify:true},
+ {type:'human_help_sound',rule:'confidence',threshold:.85,severity:'HIGH',window:120,model:'simulated-audio',explanation:'Help confidence >= 0.85',notify:true},
+ {type:'unusual_sound',rule:'confidence',threshold:.75,severity:'MEDIUM',highAt:.9,window:300,model:'simulated-audio',explanation:'Unusual sound confidence >= 0.75; HIGH at 0.90',notify:'HIGH only'},
+ {type:'normal_appliance_sound',rule:'none',severity:null,window:0,model:'simulated-audio',explanation:'Normal classification; retained without an alert',notify:false},
+ {type:'telemetry',rule:'none',severity:null,window:0,model:'simulated-audio',explanation:'Routine telemetry; retained without an alert',notify:false},
+];
+const NO_ALERT={severity:null,window:0,explanation:'No alert threshold met',model:'simulated-audio'};
 export function classify(e){
- if(e.type==='smoke_alarm')return {severity:'CRITICAL',window:300,explanation:'Deterministic smoke safety rule',model:'deterministic-rules'};
- if(e.type==='human_help_sound'&&e.confidence>=.85)return {severity:'HIGH',window:120,explanation:'Help confidence >= 0.85',model:'simulated-audio'};
- if(e.type==='unusual_sound'&&e.confidence>=.75)return {severity:e.confidence>=.9?'HIGH':'MEDIUM',window:300,explanation:'Unusual sound confidence >= 0.75; HIGH at 0.90',model:'simulated-audio'};
- return {severity:null,window:0,explanation:'No alert threshold met',model:'simulated-audio'};
+ const r=ALERT_RULES.find(x=>x.type===e.type);
+ if(!r||!r.severity)return NO_ALERT;
+ if(r.rule==='safety')return {severity:r.severity,window:r.window,explanation:r.explanation,model:r.model};
+ if(e.confidence>=r.threshold)return {severity:r.highAt!==undefined&&e.confidence>=r.highAt?'HIGH':r.severity,window:r.window,explanation:r.explanation,model:r.model};
+ return NO_ALERT;
 }
+export const DEVICE_TYPES=['camera','microphone','sensor','appliance','gateway'];
+// Allowlisted commands (Component 2 B-I-03) and which device types accept them.
+export const COMMANDS={
+ test:{label:'Run self-test',types:DEVICE_TYPES,parameters:{}},
+ restart:{label:'Restart',types:DEVICE_TYPES,parameters:{}},
+ mute:{label:'Mute audio',types:['microphone','appliance'],parameters:{durationSeconds:{min:1,max:300}}},
+ refresh_config:{label:'Reload configuration',types:DEVICE_TYPES,parameters:{}},
+};
 export const transitions={ACTIVE:['ACKNOWLEDGED','ESCALATED'],ACKNOWLEDGED:['INVESTIGATING','ESCALATED'],INVESTIGATING:['ESCALATED','RESOLVED'],ESCALATED:['RESOLVED'],RESOLVED:[]};
 export function allowedActions(alert,role){if(role==='owner')return alert.state==='ACTIVE'?['ACKNOWLEDGED']:[];return ['operator','responder'].includes(role)?transitions[alert.state]:[];}
 export function checkTransition(alert,target,actor,note,version){
