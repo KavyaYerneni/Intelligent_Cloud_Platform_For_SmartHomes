@@ -1,0 +1,18 @@
+# Implementation decisions
+
+The five supplied designs are requirement evidence, not instructions to provision infrastructure or contact anyone. Hosting remains the user's responsibility.
+
+1. React + Express 5 + PostgreSQL + MongoDB. Express keeps UI, simulator and contract validation in JavaScript. Four route/service modules retain component boundaries. PostgreSQL owns identities, inventory, workflow, audit and durable jobs; MongoDB owns flexible evidence.
+2. Component design camelCase APIs supersede older system-design snake_case examples. Device creation is POST /api/v1/rooms/{roomId}/devices (201). Event source, confidence and correlationId are validated.
+3. Duplicate conflict: the API tables say 409 duplicate, but pseudocode, invariants and acceptance checks require idempotency. Identical normalized content returns the original event/result (202); conflicting reuse of eventId or idempotency key returns 409. Keys are tenant-scoped. Payload property order is irrelevant.
+4. Alert state table is authoritative over abbreviated storyboards: ACTIVE -> ACKNOWLEDGED -> INVESTIGATING -> RESOLVED, with escalation from the first three states and resolution from ESCALATED. No direct ACKNOWLEDGED -> RESOLVED. A new matching event after resolution creates a new alert (explicitly permitted by the design); a user cannot manually reopen old evidence.
+5. unusual_sound is MEDIUM for confidence 0.75–0.89 and HIGH for >=0.90. human_help_sound >=0.85 is HIGH; smoke_alarm is deterministic CRITICAL; normal_appliance_sound is retained without an alert. Group by house/device/type within the documented windows, using acceptance time to handle delayed events consistently.
+6. AI scope: simulated labeled events and explicit rules; no trained model or inference claim. The system design allows this. Provenance uses simulated-audio/v1 or deterministic-rules/v1. No real media is collected.
+7. Cross-store safety: commit a PostgreSQL staging envelope/job before Mongo insert, then finalize the normalized reference/alert transaction after Mongo succeeds. This adds a durable intent before the document's Mongo-first sequence, avoiding an unrecoverable orphan when SQL is unavailable. Retries upsert immutable Mongo evidence and never repeat alert triggers. Staging payload is cleared after success; expired routine evidence is not reconstructed.
+8. Local substitutes: expiring signed sessions instead of Cognito, authenticated HTTP simulator instead of IoT Core/MQTT, PostgreSQL jobs instead of SQS, simulated delivery records instead of SNS, local health instead of CloudWatch. No AWS services are provisioned. Leaflet/OpenStreetMap tiles require internet; the house table works without tiles.
+9. House owners can view and acknowledge assigned houses; technicians manage inventory; responders manage alert response; operators manage their tenant and data operations. No implicit global staff bypass. Cross-tenant administration and production IAM remain deferred.
+10. Default heartbeat timeout 45 seconds, accepted ingress age 24 hours, future skew 60 seconds, query window <=31 days, page size <=100, request payload <=64 KiB. Archived houses/rooms require children to be archived first.
+
+Milestones: (1) contracts/schema/security, (2) inventory and event-to-alert pipeline, (3) integrated UI/live map/simulator/data operations, (4) tests and component demonstration handoff. No cloud rollout is part of these milestones.
+
+Implementation references: [Express async errors](https://expressjs.com/en/5x/guide/error-handling/), [PostgreSQL driver transactions](https://node-postgres.com/features/transactions), [MongoDB indexes](https://www.mongodb.com/docs/drivers/node/current/indexes/).

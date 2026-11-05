@@ -1,0 +1,5 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {eventSchema,fingerprint,range,page} from '../../backend/domain.js';
+test('Srija: stable content fingerprints and bounded history',()=>{assert.equal(fingerprint({a:1,b:2}),fingerprint({b:2,a:1}));assert.notEqual(fingerprint({a:1}),fingerprint({a:2}));assert.throws(()=>range({}));assert.throws(()=>range({from:'2026-01-01',to:'2026-03-01'}));assert.throws(()=>page({pageSize:101}));assert.equal(range({from:'2026-01-01',to:'2026-01-02'}).length,2);});
+test('Srija: corrected event contract requires correlation/source/confidence',()=>{const e={eventId:'E1',correlationId:'C1',houseId:'H1',deviceId:'D1',type:'smoke_alarm',occurredAt:new Date().toISOString(),source:'simulator',confidence:.9,payload:{}};assert.equal(eventSchema.parse(e).schemaVersion,'1.0');for(const key of ['correlationId','source','confidence']){const copy={...e};delete copy[key];assert.equal(eventSchema.safeParse(copy).success,false);}assert.equal(eventSchema.safeParse({...e,tenantId:'forged'}).success,false);});
