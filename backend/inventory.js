@@ -2,7 +2,7 @@ import {Router} from 'express';
 import {randomBytes} from 'node:crypto';
 import {z} from 'zod';
 import {pool,rows,tx,dto} from './db.js';
-import {text,id,identifier,timestamp,validTime,fail,fingerprint,page,DEVICE_TYPES,COMMANDS,ALERT_RULES} from './domain.js';
+import {text,id,identifier,timestamp,validTime,fail,fingerprint,page,DEVICE_TYPES,COMMANDS,ALERT_RULES,AI_LABEL_MAP} from './domain.js';
 import {authenticate,deviceActor,role,house,device,audit,live} from './security.js';
 export const inventory=Router();
 const manage=a=>role(a,'operator','technician');
@@ -12,7 +12,7 @@ const ensureVersion=(record,version)=>{if(record.version!==version)fail(409,'STA
 const heartbeatSeconds=()=>Number(process.env.HEARTBEAT_SECONDS||45);
 // Read-only rules for the UI: device types, commands, alert thresholds. Served from
 // domain.js so forms and the simulator preview never keep their own copy.
-inventory.get('/catalog',authenticate,(req,res)=>res.json({deviceTypes:DEVICE_TYPES,commands:COMMANDS,alertRules:ALERT_RULES,heartbeatSeconds:heartbeatSeconds()}));
+inventory.get('/catalog',authenticate,(req,res)=>res.json({deviceTypes:DEVICE_TYPES,commands:COMMANDS,alertRules:ALERT_RULES,aiLabelMap:AI_LABEL_MAP,heartbeatSeconds:heartbeatSeconds()}));
 inventory.get('/houses',authenticate,async(req,res)=>res.json({items:(await rows('SELECT * FROM houses WHERE tenant_id=$1 AND ($2::text[] IS NULL OR id=ANY($2)) ORDER BY name',[req.actor.tenant_id,req.actor.house_ids])).map(dto)}));
 inventory.post('/houses',authenticate,async(req,res)=>{manage(req.actor);if(req.actor.house_ids)fail(403,'HOUSE_SCOPE','House creation requires tenant-wide inventory access.');const b=houseSchema.parse(req.body);try{new Intl.DateTimeFormat('en',{timeZone:b.timezone});}catch{fail(400,'TIMEZONE','Unknown IANA time zone.');}const result=await tx(async c=>{const {rows:[h]}=await c.query('INSERT INTO houses(id,tenant_id,name,address,lat,lng,timezone) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *',[id('H'),req.actor.tenant_id,b.name,b.address,b.lat,b.lng,b.timezone]);await audit(c,req.actor,'HOUSE_CREATED',h.id,h.id,{},req.correlationId);await live(c,req.actor,h.id,'HOUSE_STATUS_CHANGED',dto(h),req.correlationId);return dto(h);});res.status(201).json(result);});
 inventory.patch('/houses/:houseId',authenticate,async(req,res)=>{manage(req.actor);const b=houseSchema.partial().extend({status:z.enum(['ACTIVE','MAINTENANCE','ARCHIVED']).optional(),expectedVersion:z.number().int().positive()}).parse(req.body);res.json(await tx(async c=>{await c.query('SELECT id FROM houses WHERE id=$1 FOR UPDATE',[req.params.houseId]);const h=await house(req.actor,req.params.houseId,c);ensureVersion(h,b.expectedVersion);if(h.status==='ARCHIVED')fail(409,'ARCHIVED','Archived houses cannot be edited.');if(b.status==='ARCHIVED'&&(await c.query("SELECT 1 FROM rooms WHERE house_id=$1 AND status<>'ARCHIVED'",[h.id])).rowCount)fail(409,'CHILDREN_ACTIVE','Archive rooms first.');const n={...h,...b};const {rows:[saved]}=await c.query('UPDATE houses SET name=$2,address=$3,lat=$4,lng=$5,timezone=$6,status=$7,version=version+1 WHERE id=$1 RETURNING *',[h.id,n.name,n.address,n.lat,n.lng,n.timezone,n.status]);await audit(c,req.actor,'HOUSE_UPDATED',h.id,h.id,b,req.correlationId);await live(c,req.actor,h.id,'HOUSE_STATUS_CHANGED',dto(saved));return dto(saved);}));});

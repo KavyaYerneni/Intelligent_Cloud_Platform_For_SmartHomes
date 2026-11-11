@@ -2,6 +2,20 @@ import {pool,tx,docs,dto} from './db.js';
 import {classify,id} from './domain.js';
 import {audit,live} from './security.js';
 import {notify} from './alerts.js';
+// Classification record stored next to the event evidence in MongoDB. Events
+// from the trained model keep the model's own label, version, checksum and
+// probabilities; simulator events are marked as simulated or rule based.
+export function aiResult(e,b,rule){
+ const base={tenantId:e.tenant_id,eventId:e.id,eventType:b.type,confidence:b.confidence,source:b.source,processedAt:new Date()};
+ if(b.source==='model'){const p=b.payload||{};return {...base,label:p.modelLabel,model:p.model?.name,modelVersion:p.model?.version,modelSha256:p.model?.sha256,backbone:p.backbone,probabilities:p.probabilities,latencyMs:p.latencyMs,audio:p.audio,inference:p.testEmbedder?'TEST_EMBEDDER':'TRAINED_MODEL'};}
+ return {...base,label:b.type,model:rule.model,modelVersion:b.modelVersion,inference:'SIMULATED_OR_RULE_BASED'};
+}
+// Alert explanation names the model and what it heard when the event came from it.
+export function explain(b,rule){
+ if(b.source!=='model')return rule.explanation;
+ const p=b.payload||{};
+ return `AI model ${p.model?.name} ${p.model?.version} heard "${p.modelLabel}" (${Math.round(b.confidence*100)}%). ${rule.explanation}`;
+}
 export async function processOne(tenantId=null){
  return tx(async c=>{
  const {rows:[e]}=await c.query("SELECT * FROM events WHERE processing_state='PENDING' AND next_attempt_at<=now() AND ($1::text IS NULL OR tenant_id=$1) ORDER BY created_at FOR UPDATE SKIP LOCKED LIMIT 1",[tenantId]);if(!e)return false;
@@ -11,7 +25,7 @@ export async function processOne(tenantId=null){
   const detail={...b,tenantId:e.tenant_id,occurredAt:new Date(b.occurredAt)};
   if(b.type==='telemetry')detail.expiresAt=new Date(Date.now()+90*86400000);
   await docs.collection('telemetry_events').updateOne({tenantId:e.tenant_id,eventId:e.id},{$setOnInsert:detail},{upsert:true});
-  if(b.type!=='telemetry')await docs.collection('ai_results').updateOne({tenantId:e.tenant_id,eventId:e.id},{$setOnInsert:{tenantId:e.tenant_id,eventId:e.id,label:b.type,confidence:b.confidence,model:rule.model,modelVersion:b.modelVersion,source:b.source,inference:'SIMULATED_OR_RULE_BASED',processedAt:new Date()}},{upsert:true});
+  if(b.type!=='telemetry')await docs.collection('ai_results').updateOne({tenantId:e.tenant_id,eventId:e.id},{$setOnInsert:aiResult(e,b,rule)},{upsert:true});
  }catch{
   const attempts=e.attempts+1;const state=attempts>=5?'QUARANTINED':'PENDING';
   await c.query('UPDATE events SET attempts=$3,processing_state=$4,last_error=$5,next_attempt_at=now()+($6 * interval \'1 second\') WHERE tenant_id=$1 AND id=$2',[e.tenant_id,e.id,attempts,state,'MONGO_UNAVAILABLE',Math.min(60,2**attempts)]);
@@ -24,7 +38,7 @@ export async function processOne(tenantId=null){
   const {rows:[match]}=await c.query("SELECT * FROM alerts WHERE tenant_id=$1 AND house_id=$2 AND device_id=$3 AND type=$4 AND state<>'RESOLVED' AND created_at>=now()-($5 * interval '1 second') ORDER BY created_at DESC LIMIT 1 FOR UPDATE",[e.tenant_id,e.house_id,e.device_id,e.type,rule.window]);
   let a;
   if(match){({rows:[a]}=await c.query("UPDATE alerts SET evidence_count=evidence_count+1,version=version+1,updated_at=now(),severity=CASE WHEN severity='MEDIUM' AND $2='HIGH' THEN 'HIGH' ELSE severity END WHERE id=$1 RETURNING *",[match.id,rule.severity]));}
-  else{({rows:[a]}=await c.query('INSERT INTO alerts(id,tenant_id,house_id,device_id,event_id,type,severity,explanation) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *',[id('A'),e.tenant_id,e.house_id,e.device_id,e.id,e.type,rule.severity,rule.explanation]));}
+  else{({rows:[a]}=await c.query('INSERT INTO alerts(id,tenant_id,house_id,device_id,event_id,type,severity,explanation) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *',[id('A'),e.tenant_id,e.house_id,e.device_id,e.id,e.type,rule.severity,explain(e.envelope,rule)]));}
   await c.query('INSERT INTO alert_evidence(alert_id,tenant_id,event_id) VALUES($1,$2,$3)',[a.id,e.tenant_id,e.id]);
   await audit(c,actor,match?'ALERT_GROUPED':'ALERT_CREATED',a.id,e.house_id,{eventId:e.id,fromState:match?.state??'DETECTED',toState:a.state},e.correlation_id);
   if(!match&&['CRITICAL','HIGH'].includes(a.severity))await notify(c,a);

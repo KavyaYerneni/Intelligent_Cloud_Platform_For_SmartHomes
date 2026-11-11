@@ -7,7 +7,7 @@ export const text=z.string().trim().min(1).max(160);
 export const identifier=z.string().regex(/^[a-zA-Z0-9_-]{1,100}$/);
 export const timestamp=z.string().datetime({offset:true});
 export function validTime(value,now=Date.now()){const ms=Date.parse(value);if(!Number.isFinite(ms)||ms<now-86400000||ms>now+60000)fail(400,'TIME_WINDOW','Timestamp must be within the last 24 hours and no more than 60 seconds ahead.');return ms;}
-export const eventSchema=z.object({schemaVersion:z.literal('1.0').default('1.0'),eventId:identifier,correlationId:identifier,houseId:identifier,deviceId:identifier,type:z.enum(['smoke_alarm','human_help_sound','unusual_sound','normal_appliance_sound','telemetry']),occurredAt:timestamp,source:z.enum(['simulator','device','model']),confidence:z.number().min(0).max(1).nullable(),payload:z.record(z.string(),z.unknown()),modelVersion:text.default('v1')}).strict();
+export const eventSchema=z.object({schemaVersion:z.literal('1.0').default('1.0'),eventId:identifier,correlationId:identifier,houseId:identifier,deviceId:identifier,type:z.enum(['smoke_alarm','human_help_sound','unusual_sound','normal_appliance_sound','normal_activity_sound','telemetry']),occurredAt:timestamp,source:z.enum(['simulator','device','model']),confidence:z.number().min(0).max(1).nullable(),payload:z.record(z.string(),z.unknown()),modelVersion:text.default('v1')}).strict();
 // Component 3 §3.6 configuration table. classify(), GET /api/v1/catalog and the
 // simulator's outcome preview all read this one table, so they cannot disagree.
 export const ALERT_RULES=[
@@ -15,8 +15,27 @@ export const ALERT_RULES=[
  {type:'human_help_sound',rule:'confidence',threshold:.85,severity:'HIGH',window:120,model:'simulated-audio',explanation:'Help confidence >= 0.85',notify:true},
  {type:'unusual_sound',rule:'confidence',threshold:.75,severity:'MEDIUM',highAt:.9,window:300,model:'simulated-audio',explanation:'Unusual sound confidence >= 0.75; HIGH at 0.90',notify:'HIGH only'},
  {type:'normal_appliance_sound',rule:'none',severity:null,window:0,model:'simulated-audio',explanation:'Normal classification; retained without an alert',notify:false},
+ {type:'normal_activity_sound',rule:'none',severity:null,window:0,model:'trained-model',explanation:'Everyday activity sound; retained without an alert',notify:false},
  {type:'telemetry',rule:'none',severity:null,window:0,model:'simulated-audio',explanation:'Routine telemetry; retained without an alert',notify:false},
 ];
+// Trained audio model (ml/models/human-sounds) label -> platform event type.
+// The model only names the sound; ALERT_RULES above still decide whether an
+// alert is raised and how severe it is, using the model's confidence. The
+// mapping is a team decision for senior-home monitoring (docs/DECISIONS.md 17).
+// tests/unit/ai.test.js checks it covers exactly the classes in the model manifest.
+export const AI_LABEL_MAP={
+ 'Baby cry, infant cry':{type:'human_help_sound',why:'Crying is treated as a possible call for help'},
+ 'Cough':{type:'unusual_sound',why:'Coughing can signal a respiratory problem'},
+ 'Breathing':{type:'unusual_sound',why:'Audible breathing can signal laboured breathing'},
+ 'Sneeze':{type:'normal_activity_sound',why:'Everyday sound'},
+ 'Brushing teeth':{type:'normal_activity_sound',why:'Everyday sound'},
+ 'Clapping':{type:'normal_activity_sound',why:'Everyday sound'},
+ 'Laughter':{type:'normal_activity_sound',why:'Everyday sound'},
+ 'Pouring water':{type:'normal_activity_sound',why:'Everyday sound'},
+ 'Snoring':{type:'normal_activity_sound',why:'Everyday sound'},
+ 'Walk, footsteps':{type:'normal_activity_sound',why:'Everyday sound; shows the resident is active'},
+};
+export function eventTypeForLabel(label){return AI_LABEL_MAP[label]?.type??null;}
 const NO_ALERT={severity:null,window:0,explanation:'No alert threshold met',model:'simulated-audio'};
 export function classify(e){
  const r=ALERT_RULES.find(x=>x.type===e.type);
