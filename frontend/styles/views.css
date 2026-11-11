@@ -60,7 +60,7 @@
 .login { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); min-height: 100vh; }
 .login-story { background: var(--navy); color: var(--navy-ink); padding: 56px 9%; display: flex; flex-direction: column; justify-content: center; position: relative; overflow: hidden; }
 .login-story::after { content: ''; position: absolute; right: -120px; bottom: -120px; width: 420px; height: 420px; border-radius: 50%; border: 60px solid rgba(98, 209, 189, .07); }
-.login-story .wordmark { padding: 0; margin-bottom: 64px; font-size: 1.75rem; }
+.login-story .wordmark { padding: 0; margin-bottom: 64px; font-size: 1.75rem; color: #fff; }
 .login-story h1 { font-size: clamp(2rem, 3.6vw, 3.25rem); color: #fff; line-height: 1.08; letter-spacing: -0.035em; max-width: 12ch; margin-bottom: 20px; }
 .login-story p { color: #a9c1cf; font-size: var(--fs-16); max-width: 42ch; }
 .login-foot { margin-top: 56px; font-size: var(--fs-13) !important; color: var(--navy-soft) !important; }

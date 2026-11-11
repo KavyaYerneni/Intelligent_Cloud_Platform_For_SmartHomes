@@ -22,7 +22,7 @@ export default function Shell({ view, children, onSignOut, activeAlerts }) {
     <div className="shell">
       <a className="skip" href="#main">Skip to content</a>
       <aside className="sidebar">
-        <div className="wordmark"><span className="wordmark-mark" aria-hidden="true" />hearth</div>
+        <div className="wordmark"><span className="wordmark-mark" aria-hidden="true" />EchoNest</div>
         <p className="tenant">{user.tenantName || user.tenantId}</p>
         <nav aria-label="Main">
           {VIEWS.filter(v => !v.when || v.when(user)).map(v => (

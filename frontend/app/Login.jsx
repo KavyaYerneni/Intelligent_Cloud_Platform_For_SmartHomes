@@ -20,7 +20,7 @@ export default function Login({ onSignedIn, expired }) {
   return (
     <main className="login">
       <section className="login-story">
-        <div className="wordmark"><span className="wordmark-mark" aria-hidden="true" />hearth</div>
+        <div className="wordmark"><span className="wordmark-mark" aria-hidden="true" />EchoNest</div>
         <h1>Every house, one clear view.</h1>
         <p>See which home needs attention, keep devices connected, and follow each alert from the first signal to a recorded outcome.</p>
         <p className="login-foot">CMPE 281 Group 4, Intelligent Cloud Platform for Smart Homes. Local prototype with synthetic data.</p>

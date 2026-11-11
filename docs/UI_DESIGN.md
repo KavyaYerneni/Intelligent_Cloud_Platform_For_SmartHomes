@@ -1,4 +1,4 @@
-# UI design: Hearth
+# UI design: EchoNest
 
 What the interface is for, and the reasons behind its look. Written before the redesign was built, then updated to match what shipped.
 
@@ -51,7 +51,7 @@ Each status shows a **label, a shape, and a color**, so it reads in grayscale an
 
 ```
 ┌────────┬──────────────────────────────────────────────────────────┐
-│ hearth │ Page title            House: [All ▾]     ● Live 10:42:05 │
+│ EchoNest │ Page title            House: [All ▾]     ● Live 10:42:05 │
 │        ├──────────────────────────────────────────────────────────┤
 │ nav    │  page content (max 1440 px)                              │
 │        │                                                          │

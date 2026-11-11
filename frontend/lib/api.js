@@ -3,7 +3,7 @@
 // each field's message next to the field. Only the session token is kept in
 // sessionStorage (cleared when the tab closes); operational data always comes
 // from the API.
-const KEY = 'hearth.session';
+const KEY = 'echonest.session';
 let token = sessionStorage.getItem(KEY) || '';
 let onUnauthorized = null;
 
