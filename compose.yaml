@@ -54,6 +54,24 @@ services:
     command: ["node", "backend/worker.js"]
     depends_on:
       setup: {condition: service_completed_successfully}
+  replay:
+    image: python:3.11-slim
+    profiles: [playback]
+    working_dir: /app
+    env_file: .env
+    environment:
+      API_URL: http://app:3000
+    command: [python, scripts/replay-datasets.py, --interval, '1']
+    volumes:
+      - ./scripts/replay-datasets.py:/app/scripts/replay-datasets.py:ro
+      - ./datasets:/app/datasets:ro
+      - ./ml/training-recordings.txt:/app/ml/training-recordings.txt:ro
+      - replay_progress:/app/.runtime
+    depends_on:
+      app: {condition: service_started}
+      ml: {condition: service_started}
+    restart: on-failure
 volumes:
   postgres_data:
   mongo_data:
+  replay_progress:

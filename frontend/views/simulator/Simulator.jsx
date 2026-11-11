@@ -28,13 +28,14 @@ export default function Simulator() {
   useEffect(() => { setAuto(false); }, [deviceId]);
 
   const [clips, setClips] = useState([]);
+  const [classifier, setClassifier] = useState('human');
   const [sending, setSending] = useState(false);
   // Each clip gets its own event ID; the server classifies it with the trained model.
   const sendClips = async () => {
     setSending(true);
     for (const f of clips) {
       try {
-        const r = await api(`/devices/${deviceId}/audio`, { method: 'POST', audio: f, headers: { 'X-Event-Id': `aud-${newId()}` } });
+        const r = await api(`/devices/${deviceId}/audio`, { method: 'POST', audio: f, headers: { 'X-Event-Id': `aud-${newId()}`, 'X-Audio-Classifier': classifier, 'X-Audio-Origin': 'recorded-dataset' } });
         const i = r.inference;
         note(`AI: ${f.name}`, true, `${i.testEmbedder ? '[Test embedder, not real] ' : ''}Model heard ${i.label} (${Math.round(i.confidence * 100)}%), stored as ${human(i.eventType).toLowerCase()}${r.alertPreview ? `; a ${r.alertPreview.toLowerCase()} alert will be raised.` : '; no alert.'}`);
       } catch (e) { note(`AI: ${f.name}`, false, e.message); }
@@ -140,6 +141,7 @@ export default function Simulator() {
           </div>
           <div className="audio-send">
             <h3>Recorded audio, classified by the trained AI model</h3>
+            <label className="field">Sound classifier<select value={classifier} onChange={e => setClassifier(e.target.value)}><option value="human">Human sounds · team classifier</option><option value="general">Appliances, animals & general sounds · YAMNet</option></select></label>
             <p className="hint">Choose WAV clips, for example from your dataset. Each one is sent as this device's microphone capture; the model decides what it heard, and the alert rules decide what happens next.</p>
             <label className={`dropzone dropzone-sm ${clips.length ? 'has-file' : ''}`}>
               <Icon name="upload" size={18} />

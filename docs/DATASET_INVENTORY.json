@@ -1,0 +1,23 @@
+{
+  "Animal Sound": {
+    "wav": 1553,
+    "over30Seconds": 0,
+    "underHalfSecond": 272,
+    "over6MB": 0,
+    "invalid": []
+  },
+  "appliance_audio": {
+    "wav": 4498,
+    "over30Seconds": 3,
+    "underHalfSecond": 133,
+    "over6MB": 1,
+    "invalid": []
+  },
+  "Human audio": {
+    "wav": 2000,
+    "over30Seconds": 0,
+    "underHalfSecond": 0,
+    "over6MB": 0,
+    "invalid": []
+  }
+}

@@ -26,12 +26,13 @@ const fakeServer=createServer((req,res)=>{
   const rest=manifest.classes.filter(c=>c!==fake.label).map(c=>({label:c,probability:+((1-fake.confidence)/9).toFixed(4)}));
   return send(200,{model:{name:'human-sounds',version:'1.0.0',sha256:manifest.sha256},label:fake.label,confidence:fake.confidence,
    probabilities:[{label:fake.label,probability:fake.confidence},...rest],audio:{sampleRate:44100,channels:1,durationSeconds:5,resampledTo:16000},
-   embedder:{kind:'yamnet',loaded:true,testOnly:false},frames:10,audioSetTop:[],latencyMs:42});
+   embedder:{kind:'yamnet',loaded:true,testOnly:false},frames:10,audioSetTop:[{label:'Dog',score:.82}],latencyMs:42});
  }
  send(404,{code:'NOT_FOUND'});
 });
 
 let server,base,op,tech,owner;
+const createdHouses=[];
 const WAV=Buffer.concat([Buffer.from('RIFF\0\0\0\0WAVEfmt '),Buffer.alloc(64)]); // content is irrelevant to the fake
 async function call(path,{method='GET',body,auth=op,headers={}}={}){
  const raw=Buffer.isBuffer(body);
@@ -48,6 +49,8 @@ before(async()=>{
  }
 });
 after(async()=>{
+ await pool.query("UPDATE houses SET status='ARCHIVED' WHERE id=ANY($1)",[createdHouses]);
+ await pool.query("UPDATE alerts SET state='RESOLVED' WHERE house_id=ANY($1)",[createdHouses]);
  await pool.query("DELETE FROM ai_model_settings WHERE tenant_id='T001'");
  server?.closeAllConnections();await new Promise(r=>server.close(r));fakeServer.close();await close();
 });
@@ -55,6 +58,7 @@ after(async()=>{
 async function microphone(){
  const s=randomUUID().slice(0,8);
  const h=(await call('/houses',{method:'POST',body:{name:`AI ${s}`,address:'Synthetic',lat:37.3,lng:-121.9}})).body;
+ createdHouses.push(h.id);
  const room=(await call(`/houses/${h.id}/rooms`,{method:'POST',body:{name:'Bedroom',roomType:'bedroom'}})).body;
  const mic=(await call(`/rooms/${room.id}/devices`,{method:'POST',body:{name:'Bedroom mic',type:'microphone',serialNo:`SN-AI-${s}`,capabilities:['audio']}})).body;
  const cred=(await call(`/devices/${mic.id}/credentials`,{method:'POST',body:{}})).body.credential;
@@ -83,6 +87,12 @@ test('device audio becomes a model event, a HIGH alert and stored provenance; re
  assert.equal(ev.aiResult.probabilities[0].label,'Baby cry, infant cry');
  const alert=(await call(`/alerts?houseId=${h.id}`)).body.items[0];
  assert.equal(alert.severity,'HIGH');
+ const snap=(await call(`/dashboard/summary?houseId=${h.id}`)).body;
+ assert.equal(snap.audio.count,1);assert.equal(snap.audio.categories,1);
+ assert.equal(snap.recentEvents[0].soundLabel,'Baby cry, infant cry');
+ assert.equal(snap.recentEvents[0].roomName,'Bedroom');
+ assert.equal(snap.recentEvents[0].alertSeverity,'HIGH');
+ assert.equal((await call(`/dashboard/summary?houseId=${h.id}`,{auth:owner})).status,403);
  assert.match(alert.explanation,/^AI model human-sounds 1\.0\.0 heard "Baby cry, infant cry" \(93%\)/);
  // Retry with the same event ID: original result, no second inference, no second event.
  const again=await call(`/devices/${mic.id}/audio`,{method:'POST',auth:device,body:WAV,headers:{'X-Event-Id':eventId}});
@@ -165,4 +175,14 @@ test('test console classifies without creating events; stats summarise live infe
  assert(s.byLabel.some(x=>x.label==='Baby cry, infant cry'&&x.eventType==='human_help_sound'));
  assert(s.recent.some(x=>x.deviceName==='Bedroom mic'));
  assert.equal((await call('/ai/stats?hours=500')).status,400);
+});
+
+
+test('general audio retains AudioSet label, score and recorded provenance in scoped monitoring',async()=>{
+ const {h,mic,device}=await microphone();fake.mode='ok';fake.label='Cough';fake.confidence=.99;
+ const r=await call(`/devices/${mic.id}/audio`,{method:'POST',auth:device,body:WAV,headers:{'X-Audio-Classifier':'general','X-Audio-Origin':'recorded-dataset'}});
+ assert.equal(r.status,202);assert.equal(r.body.inference.label,'Dog');assert.equal(r.body.inference.confidence,.82);assert.equal(r.body.alertPreview,null);
+ await drain(r.body.eventId);
+ const s=(await call(`/dashboard/summary?houseId=${h.id}`)).body;
+ assert.equal(s.recentEvents[0].soundLabel,'Dog');assert.equal(s.recentEvents[0].inputOrigin,'recorded-dataset');assert.equal(s.audio.count,1);
 });

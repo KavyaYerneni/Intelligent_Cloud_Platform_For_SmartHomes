@@ -2,7 +2,7 @@ import {Router} from 'express';
 import {z} from 'zod';
 import {rows,tx,dto} from './db.js';
 import {authenticate,house} from './security.js';
-import {houseHealth,range,fail,page} from './domain.js';
+import {houseHealth,range,fail,page,classify} from './domain.js';
 import {eventHistory,health} from './data.js';
 export const dashboard=Router();
 export async function snapshot(actor,q={}){
@@ -12,10 +12,13 @@ export async function snapshot(actor,q={}){
  const {rows:devices}=await c.query("SELECT d.*,r.name AS room_name FROM devices d JOIN rooms r ON r.id=d.room_id WHERE d.tenant_id=$1 AND d.house_id=ANY($2) AND d.status<>'ARCHIVED' ORDER BY d.name",[actor.tenant_id,hs]);
  for(const d of devices)if(d.status==='ONLINE'&&Date.now()-new Date(d.last_seen).getTime()>Number(process.env.HEARTBEAT_SECONDS||45)*1000)d.status='OFFLINE';
  const {rows:alerts}=await c.query("SELECT a.*,d.name AS device_name FROM alerts a JOIN devices d ON d.id=a.device_id WHERE a.tenant_id=$1 AND a.house_id=ANY($2) AND a.state<>'RESOLVED' ORDER BY CASE a.severity WHEN 'CRITICAL' THEN 0 WHEN 'HIGH' THEN 1 WHEN 'MEDIUM' THEN 2 ELSE 3 END,a.created_at DESC",[actor.tenant_id,hs]);
- const {rows:recentEvents}=await c.query('SELECT e.id,e.type,e.house_id,e.device_id,e.occurred_at,e.source,e.confidence,e.processing_state,h.name AS house_name,d.name AS device_name FROM events e JOIN houses h ON h.id=e.house_id JOIN devices d ON d.id=e.device_id WHERE e.tenant_id=$1 AND e.house_id=ANY($2) AND e.occurred_at >= $3 AND e.occurred_at < $4 ORDER BY e.occurred_at DESC LIMIT 15',[actor.tenant_id,hs,...window]);
+ const {rows:recentEvents}=await c.query(`SELECT e.id,e.type,e.house_id,e.device_id,e.occurred_at,e.source,e.confidence,e.processing_state,i.label AS sound_label,i.model_name,i.input_origin,r.name AS room_name,h.name AS house_name,d.name AS device_name FROM events e JOIN houses h ON h.id=e.house_id JOIN devices d ON d.id=e.device_id JOIN rooms r ON r.id=d.room_id LEFT JOIN LATERAL (SELECT label,model_name,input_origin FROM ai_inferences WHERE tenant_id=e.tenant_id AND event_id=e.id AND status='OK' ORDER BY id LIMIT 1) i ON true WHERE e.tenant_id=$1 AND e.house_id=ANY($2) AND e.occurred_at >= $3 AND e.occurred_at < $4 ORDER BY e.occurred_at DESC LIMIT 15`,[actor.tenant_id,hs,...window]);
+ const {rows:sounds}=await c.query(`SELECT label,count(*)::int AS count,avg(confidence)::float AS confidence FROM ai_inferences WHERE tenant_id=$1 AND house_id=ANY($2) AND created_at >= $3 AND created_at < $4 AND status='OK' GROUP BY label ORDER BY count DESC LIMIT 12`,[actor.tenant_id,hs,...window]);
+ const {rows:hourly}=await c.query(`SELECT date_trunc('hour',created_at) AS hour,count(*)::int AS count FROM ai_inferences WHERE tenant_id=$1 AND house_id=ANY($2) AND created_at >= $3 AND created_at < $4 AND status='OK' GROUP BY 1 ORDER BY 1`,[actor.tenant_id,hs,...window]);
+ const {rows:[audioTotals]}=await c.query(`SELECT count(*)::int AS count,count(DISTINCT label)::int AS categories,avg(confidence)::float AS confidence FROM ai_inferences WHERE tenant_id=$1 AND house_id=ANY($2) AND created_at >= $3 AND created_at < $4 AND status='OK'`,[actor.tenant_id,hs,...window]);
  const {rows:[v]}=await c.query('SELECT COALESCE(max(id),0) AS version FROM live_events');
  const result=houses.map(h=>{const ds=devices.filter(d=>d.house_id===h.id),as=alerts.filter(a=>a.house_id===h.id);return {...dto(h),houseId:h.id,health:houseHealth(ds,as),activeAlertCount:as.length,lastSeen:ds.map(d=>d.last_seen).filter(Boolean).sort((a,b)=>b-a)[0]??null,devices:ds.map(dto),alerts:as.map(dto)};});
- return {summaryVersion:Number(v.version),generatedAt:new Date().toISOString(),totals:{houses:houses.length,onlineDevices:devices.filter(d=>d.status==='ONLINE').length,offlineDevices:devices.filter(d=>d.status==='OFFLINE').length,activeAlerts:alerts.length},houses:result,recentEvents:recentEvents.map(dto)};});
+ return {audio:{sounds,hourly,...audioTotals},summaryVersion:Number(v.version),generatedAt:new Date().toISOString(),totals:{houses:houses.length,onlineDevices:devices.filter(d=>d.status==='ONLINE').length,offlineDevices:devices.filter(d=>d.status==='OFFLINE').length,activeAlerts:alerts.length},houses:result,recentEvents:recentEvents.map(e=>({...dto(e),alertSeverity:classify(e).severity}))};});
 }
 dashboard.get('/dashboard/summary',authenticate,async(req,res)=>res.json(await snapshot(req.actor,req.query)));
 dashboard.get('/houses/status',authenticate,async(req,res)=>{if(req.query.status&&!['ALERT','OFFLINE','DEGRADED','HEALTHY'].includes(req.query.status))fail(400,'STATUS','Invalid house health.');const s=await snapshot(req.actor,req.query);const p=page(req.query);res.json({items:s.houses.filter(h=>!req.query.status||h.health===req.query.status).slice(p.offset,p.offset+p.limit)});});

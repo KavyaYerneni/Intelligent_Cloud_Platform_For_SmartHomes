@@ -1,0 +1,66 @@
+/* The reference's quiet horizontal layout, adapted to operational monitoring. */
+:root { --navy:#302568; --navy-2:#4837a3; --canvas:#f7f7fa; --ink:#24232d; --ink-2:#666571; --ink-3:#73717f; --line:#e0dfe7; --sunken:#f4f3f7; --display:Arial,Helvetica,sans-serif; --sans:Arial,Helvetica,sans-serif; --r-md:8px; }
+body { background:#101027; }
+.shell { display:block; max-width:1600px; margin:32px auto; min-height:calc(100vh - 64px); background:var(--canvas); }
+.sidebar { position:relative; height:auto; display:flex; flex-direction:row; flex-wrap:wrap; align-items:center; gap:24px; background:var(--canvas); color:var(--ink); padding:26px 44px 0; }
+.wordmark { color:var(--ink); padding:0; font-size:24px; }
+.wordmark-mark { background:#4837bd; }
+.tenant { display:none; }
+.sidebar nav { flex:0 0 100%; display:flex; gap:24px; order:3; width:100%; border-bottom:1px solid var(--line); margin-top:10px; }
+.sidebar nav a { border-radius:0; color:var(--ink-2); padding:16px 0; border-bottom:2px solid transparent; }
+.sidebar nav a .icon { display:none; }
+.sidebar nav a.on { background:transparent; color:var(--ink); box-shadow:none; border-bottom-color:#4837bd; }
+.sidebar nav a:hover { background:transparent; color:#4837bd; }
+.sidebar-user { margin:0 0 0 auto; padding:0; border:0; display:flex; align-items:center; gap:14px; }
+.sidebar-user strong { color:var(--ink); font-size:12px; }
+.sidebar-user span { color:var(--ink-2); }
+.btn-ghost-dark { color:var(--ink); border:1px solid var(--line); margin:0; }
+.topbar { position:relative; background:transparent; backdrop-filter:none; border:0; padding:28px 44px 8px; flex-wrap:wrap; }
+.topbar h1 { font-size:21px; font-weight:500; }
+.live { background:transparent; padding-right:0; }
+.live-time { display:none; }
+.content { max-width:none; padding:24px 44px 48px; }
+.audio-hero { display:grid; grid-template-columns:.85fr 1.2fr; gap:64px; padding:38px 20px 48px; border-bottom:1px solid var(--line); }
+.eyebrow { font-size:10px; letter-spacing:.14em; color:var(--ink-2); margin-bottom:16px; font-weight:600; }
+.hero-number h2 { font-size:64px; letter-spacing:-.05em; font-weight:500; }
+.hero-number>p:not(.eyebrow) { font-size:16px; }
+.hero-number .hero-context { color:var(--ink-2); margin:32px 0 22px; max-width:38ch; line-height:1.7; font-size:14px!important; }
+.hero-number a { color:#4837a3; text-underline-offset:5px; }
+.audio-chart header { display:flex; justify-content:space-between; gap:16px; align-items:center; }
+.audio-chart header span { color:var(--ink-2); font-size:12px; }
+.bar-chart { height:205px; display:flex; align-items:flex-end; gap:7px; border-bottom:1px solid #aaa6ba; margin:28px 0; background:repeating-linear-gradient(to top,transparent 0,transparent 49px,#e9e7ee 50px); }
+.bar-slot { height:100%; flex:1; display:flex; flex-direction:column; justify-content:flex-end; position:relative; }
+.audio-bar { width:100%; min-height:1px; }
+.bar-slot small { position:absolute; bottom:-24px; font-size:10px; color:var(--ink-2); }
+.audio-chart details { font-size:11px; color:var(--ink-2); margin-top:8px; }
+.hourly-counts { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; }
+.audio-insights { display:grid; grid-template-columns:1fr 1fr; gap:52px; padding:36px 20px; }
+.mix-body { display:flex; align-items:center; gap:24px; margin-top:24px; }
+.sound-ring { width:160px; height:160px; border-radius:50%; padding:9px; flex-shrink:0; }
+.sound-ring>div { background:var(--canvas); border-radius:50%; width:100%; height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+.sound-ring strong { font-size:30px; font-weight:500; }
+.sound-ring span { font-size:11px; color:var(--ink-2); }
+.mix-body ul { list-style:none; padding:0; margin:0; width:100%; }
+.mix-body li { display:flex; align-items:center; gap:8px; margin:12px 0; font-size:12px; }
+.mix-body i { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+.mix-body b { margin-left:auto; }
+.monitor-metrics { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:0; }
+.monitor-metrics>div { background:#eeedf3; border-radius:8px; padding:19px; }
+.monitor-metrics dt { color:var(--ink-2); font-size:12px; }
+.monitor-metrics dd { font-size:27px; margin:8px 0 0; }
+.monitor-metrics small { font-size:10px; color:var(--ink-2); }
+.sound-feed { margin-bottom:34px; background:white; }
+.sound-feed .eyebrow { margin-bottom:7px; }
+.sound-feed meter { display:block; width:80px; height:6px; margin-top:4px; accent-color:#4837bd; }
+.feed-empty { padding:25px; color:var(--ink-2); }
+.room-section { margin-bottom:34px; }
+.room-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; }
+.room-tile { padding:16px 12px; border:1px solid var(--line); border-radius:6px; display:flex; flex-direction:column; gap:5px; background:#fff; }
+.room-tile strong { font-size:12px; }
+.room-tile small,.room-tile>span:last-child { color:var(--ink-2); font-size:10px; }
+.room-dot { width:6px; height:6px; border-radius:50%; background:#aaa5b5; margin-bottom:7px; }
+.room-dot.reporting { background:#387d66; }
+.panel { box-shadow:none; }
+@media(min-width:1700px) { .shell { margin:48px auto; } }
+@media(max-width:1050px) { .shell { margin:0; } .sidebar { padding:20px 24px 0; } .topbar { padding:24px 24px 8px; } .content { padding:20px 24px; } .audio-hero { gap:30px; padding:24px 0 36px; } .audio-insights { padding:30px 0; gap:24px; } .mix-body { flex-wrap:wrap; } .room-grid { grid-template-columns:repeat(3,1fr); } }
+@media(max-width:650px) { .sidebar-user span,.sidebar-user strong { display:none; } .sidebar { gap:12px; } .sidebar nav { gap:18px; overflow-x:auto; flex-wrap:nowrap; } .sidebar nav a { white-space:nowrap; font-size:12px; } .audio-hero,.audio-insights { grid-template-columns:1fr; } .hero-number h2 { font-size:52px; } .hero-number .hero-context { margin:18px 0; } .audio-chart { margin-top:12px; } .mix-body { flex-wrap:nowrap; } .house-picker select { min-width:0; width:170px; } .topbar { gap:14px; } .topbar h1 { width:100%; } .room-grid { grid-template-columns:repeat(2,1fr); } .content { padding:16px; } .live { font-size:11px; } }

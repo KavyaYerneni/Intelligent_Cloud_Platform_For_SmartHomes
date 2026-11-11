@@ -7,6 +7,7 @@ import { Empty, ErrorBox, Skeleton, StaleNote } from '../../ui/Feedback';
 import { useApp } from '../../app/context';
 import { sourceLabel } from '../../lib/source';
 import HouseMap from './HouseMap';
+import AudioOverview from './AudioOverview';
 import HouseDrawer from './HouseDrawer';
 import { needsAttention, reason } from './health';
 
@@ -25,6 +26,7 @@ export default function Overview() {
   return (
     <>
       <StaleNote error={snap.error} at={snap.at} />
+      <AudioOverview snapshot={s} />
       <div className="grid-overview">
         <section className="panel attention" aria-labelledby="att-h">
           <header className="panel-head"><h2 id="att-h">Needs attention</h2><span className="count-pill">{attention.length}</span></header>
@@ -89,7 +91,7 @@ export default function Overview() {
               {s.recentEvents.map(e => (
                 <li key={e.id}>
                   <span className={`act-mark act-${e.type}`} aria-hidden="true" />
-                  <span className="grow"><strong>{human(e.type)}</strong><small>{e.deviceName} at {e.houseName}, {sourceLabel(e.source)}{e.confidence !== null ? `, ${Math.round(e.confidence * 100)}% confidence` : ''}</small></span>
+                  <span className="grow"><strong>{e.soundLabel || human(e.type)}</strong><small>{e.deviceName} at {e.houseName}, {sourceLabel(e.source)}{e.confidence !== null ? `, ${Math.round(e.confidence * 100)}% confidence` : ''}</small></span>
                   <span className="act-time">{ago(e.occurredAt)}</span>
                 </li>
               ))}

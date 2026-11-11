@@ -42,6 +42,7 @@ export default function AiModels({ arg }) {
         <p className="banner banner-bad" role="alert"><strong>YAMNet failed to load.</strong> {m.service.embedder.error}</p>
       )}
 
+      <p className="banner banner-info">Human recordings use the team’s ten-class model. General sound playback uses YAMNet AudioSet predictions for animals, appliances, and other sounds. Scores describe model confidence; they are not accuracy measurements. Both paths follow the community’s enable/disable setting.</p>
       <dl className="strip">
         <div><dt>Inference service</dt><dd><Status value={!m.service.reachable ? 'UNAVAILABLE' : testOnly ? 'DEGRADED' : 'HEALTHY'} label={!m.service.reachable ? 'Unreachable' : testOnly ? 'Test mode' : 'Ready'} /></dd><small>{m.service.embedder ? `Backbone: ${m.service.embedder.kind === 'yamnet' ? 'YAMNet' : 'test embedder'}` : 'No backbone loaded'}</small></div>
         <div><dt>Live model</dt><dd className="model-name">{model ? `${model.name} ${model.version}` : 'None loaded'}</dd><small><Status value={m.active.enabled ? 'ONLINE' : 'ARCHIVED'} label={m.active.enabled ? 'Enabled' : 'Disabled'} quiet /></small></div>
@@ -67,7 +68,7 @@ function Monitor({ stats }) {
   return (
     <div className="grid-two">
       <section className="panel" aria-labelledby="heard-h">
-        <header className="panel-head"><h2 id="heard-h">What the model heard</h2><span className="muted">Last 24 hours, live clips only</span></header>
+        <header className="panel-head"><h2 id="heard-h">What the model heard</h2><span className="muted">Last 24 hours, monitoring events</span></header>
         {s.byLabel.length ? (
           <ul className="label-bars">
             {s.byLabel.map(x => (

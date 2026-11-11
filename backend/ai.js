@@ -17,6 +17,7 @@ import {AI_LABEL_MAP,ALERT_RULES,classify as alertRule,eventSchema,eventTypeForL
 import {authenticate,deviceActor,device,house,role,audit} from './security.js';
 import {storeEvent} from './alerts.js';
 import * as ml from './ml.js';
+import {broadPrediction,broadEventType} from './audio-routing.js';
 
 export const ai=Router();
 export const AUDIO_MODEL=()=>process.env.AUDIO_MODEL_NAME||'human-sounds';
@@ -40,9 +41,9 @@ export async function activeModel(tenantId){
 /** Every attempt is logged, including ones that never became an event. Never throws. */
 async function logInference(f){
  try{
-  await pool.query(`INSERT INTO ai_inferences(tenant_id,house_id,device_id,event_id,model_name,model_version,label,event_type,confidence,latency_ms,audio_seconds,status,error_code,correlation_id)
-   VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
-   [f.tenantId,f.houseId??null,f.deviceId??null,f.eventId??null,f.model?.name??null,f.model?.version??null,f.label??null,f.eventType??null,f.confidence??null,f.latencyMs??null,f.audioSeconds??null,f.status,f.errorCode??null,f.correlationId]);
+  await pool.query(`INSERT INTO ai_inferences(tenant_id,house_id,device_id,event_id,model_name,model_version,label,event_type,confidence,latency_ms,audio_seconds,status,error_code,correlation_id,input_origin)
+   VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+   [f.tenantId,f.houseId??null,f.deviceId??null,f.eventId??null,f.model?.name??null,f.model?.version??null,f.label??null,f.eventType??null,f.confidence??null,f.latencyMs??null,f.audioSeconds??null,f.status,f.errorCode??null,f.correlationId,f.inputOrigin??'unspecified']);
  }catch(e){console.error(JSON.stringify({component:'ai',error:'INFERENCE_LOG_FAILED',detail:e.code||e.name}));}
 }
 
@@ -61,7 +62,8 @@ ai.post('/devices/:deviceId/audio',deviceActor,rawAudio,async(req,res)=>{
  if(h.status!=='ACTIVE')fail(409,'INACTIVE','The house is not active.');
  if(!(d.capabilities||[]).includes('audio'))fail(400,'CAPABILITY','This device has no audio capability.');
  const eventId=req.headers['x-event-id']?identifier.parse(req.headers['x-event-id']):`aud-${randomUUID()}`;
- const base={tenantId:d.tenant_id,houseId:d.house_id,deviceId:d.id,correlationId:req.correlationId};
+ const inputOrigin=z.enum(['unspecified','recorded-dataset','microphone']).default('unspecified').parse(req.headers['x-audio-origin']);
+ const base={inputOrigin,tenantId:d.tenant_id,houseId:d.house_id,deviceId:d.id,correlationId:req.correlationId};
 
  // Retried upload with the same X-Event-Id: return the stored result without re-running inference.
  const [prior]=await rows('SELECT * FROM events WHERE tenant_id=$1 AND id=$2',[d.tenant_id,eventId]);
@@ -72,6 +74,7 @@ ai.post('/devices/:deviceId/audio',deviceActor,rawAudio,async(req,res)=>{
  }
  const occurredAt=req.headers['x-captured-at']?new Date(validTime(req.headers['x-captured-at'])).toISOString():new Date().toISOString();
  const wav=audioBody(req);
+ const classifier=z.enum(['human','general']).default('human').parse(req.headers['x-audio-classifier']);
 
  let active;
  try{active=await activeModel(d.tenant_id);}
@@ -86,7 +89,10 @@ ai.post('/devices/:deviceId/audio',deviceActor,rawAudio,async(req,res)=>{
   if(e.status===503)fail(503,e.code,`${e.message} Keep the clip and retry with the same X-Event-Id.`);
   fail(e.status,e.code,e.message);
  }
- const type=eventTypeForLabel(inf.label);
+ if(classifier==='general') {
+  try { inf=broadPrediction(inf); } catch { fail(503,'AUDIOSET_UNAVAILABLE','The broad sound classifier is unavailable.'); }
+ }
+ const type=classifier==='general'?broadEventType(inf.label):eventTypeForLabel(inf.label);
  if(!type){await logInference({...base,model:active,label:inf.label,status:'FAILED',errorCode:'UNMAPPED_LABEL'});fail(502,'UNMAPPED_LABEL',`The model returned "${inf.label}", which has no event mapping.`);}
 
  const b=eventSchema.parse({eventId,correlationId:req.correlationId,houseId:d.house_id,deviceId:d.id,type,occurredAt,source:'model',
@@ -96,7 +102,7 @@ ai.post('/devices/:deviceId/audio',deviceActor,rawAudio,async(req,res)=>{
  const e=await storeEvent(a,d,b,eventId);
  await logInference({...base,eventId,model:inf.model,label:inf.label,eventType:type,confidence:inf.confidence,latencyMs:inf.latencyMs,audioSeconds:inf.audio?.durationSeconds,status:'OK'});
  res.status(202).json({eventId:e.id,processingState:e.processing_state,correlationId:e.correlation_id,
-  inference:summary(inf),alertPreview:alertRule(b).severity});
+  inference:{...summary(inf),eventType:type},alertPreview:alertRule(b).severity});
 });
 
 // ---------------------------------------------------------------- model management
