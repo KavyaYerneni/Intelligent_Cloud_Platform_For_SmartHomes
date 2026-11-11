@@ -1,14 +1,19 @@
 import React, { useEffect, useRef } from 'react';
 import Icon from './Icon';
 
+// Focus moves in once, when the overlay opens. Parents pass a new onClose on
+// every render (live updates re-render often), so it is read through a ref:
+// re-running the effect would pull focus back to the first field while typing.
 function useDismiss(onClose, ref) {
+  const close = useRef(onClose);
+  close.current = onClose;
   useEffect(() => {
     const opener = document.activeElement;
     ref.current?.querySelector('[data-autofocus], input, select, textarea, button:not(.x)')?.focus();
-    const onKey = e => e.key === 'Escape' && onClose();
+    const onKey = e => e.key === 'Escape' && close.current();
     document.addEventListener('keydown', onKey);
     return () => { document.removeEventListener('keydown', onKey); opener?.focus?.(); };
-  }, [onClose, ref]);
+  }, [ref]);
 }
 
 /** Modal dialog: labelled, Escape closes, focus returns to the opener. */
