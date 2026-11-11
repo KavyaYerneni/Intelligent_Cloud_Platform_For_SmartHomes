@@ -19,12 +19,22 @@ services:
       test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
       interval: 5s
       retries: 20
+  # AI inference: YAMNet + the team's trained classifier (ml/). Internal to the
+  # stack; the host port exists only for `npm run server` development mode.
+  # The first build downloads TensorFlow and YAMNet (several minutes, ~2 GB image).
+  ml:
+    build: ./ml
+    environment:
+      ML_SERVICE_TOKEN: ${ML_SERVICE_TOKEN:-}
+    ports: ["127.0.0.1:8000:8000"]
   setup:
     build: .
     env_file: .env
     environment: &appenv
       DATABASE_URL: postgres://smarthome:local-development-only@postgres:5432/smarthome
       MONGO_URL: mongodb://mongo:27017
+      ML_SERVICE_URL: http://ml:8000
+      ML_SERVICE_TOKEN: ${ML_SERVICE_TOKEN:-}
     command: ["sh", "-c", "node backend/migrate.js && node backend/seed.js"]
     depends_on:
       postgres: {condition: service_healthy}
@@ -36,6 +46,7 @@ services:
     ports: ["127.0.0.1:3000:3000"]
     depends_on:
       setup: {condition: service_completed_successfully}
+      ml: {condition: service_started}
   worker:
     build: .
     env_file: .env
