@@ -24,19 +24,21 @@ export const getToken = () => token;
 export const setUnauthorizedHandler = fn => { onUnauthorized = fn; };
 export const newId = () => crypto.randomUUID();
 
-export async function api(path, { method = 'GET', body, query, key } = {}) {
+// `audio` sends a WAV File/Blob as the raw request body (for /devices/{id}/audio and /ai/test).
+export async function api(path, { method = 'GET', body, query, key, audio, headers: extra } = {}) {
   const qs = query ? '?' + new URLSearchParams(Object.entries(query).filter(([, v]) => v !== undefined && v !== null && v !== '')) : '';
   let response;
   try {
     response = await fetch(`/api/v1${path}${qs === '?' ? '' : qs}`, {
       method,
       headers: {
-        'Content-Type': 'application/json',
+        'Content-Type': audio ? 'audio/wav' : 'application/json',
         'X-Correlation-Id': `ui-${newId().slice(0, 12)}`,
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(key ? { 'Idempotency-Key': key } : {}),
+        ...extra,
       },
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: audio ?? (body === undefined ? undefined : JSON.stringify(body)),
     });
   } catch {
     throw new ApiError(0, { code: 'NETWORK', message: "Can't reach the server. Check that the API is running, then retry." });

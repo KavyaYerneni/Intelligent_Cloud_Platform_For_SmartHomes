@@ -13,6 +13,7 @@ import Inventory from '../views/inventory/Inventory';
 import Alerts from '../views/alerts/Alerts';
 import DataOps from '../views/data/DataOps';
 import Simulator from '../views/simulator/Simulator';
+import AiModels from '../views/ai/AiModels';
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -43,6 +44,7 @@ function SignedIn({ user, onSignOut }) {
     alerts: <Alerts arg={route.arg} />,
     data: <DataOps arg={route.arg} />,
     simulator: can(user, 'simulate') ? <Simulator /> : null,
+    ai: can(user, 'aiView') ? <AiModels arg={route.arg} /> : null,
   };
   return (
     <AppCtx.Provider value={ctx}>

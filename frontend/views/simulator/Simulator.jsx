@@ -3,6 +3,7 @@ import { api, newId } from '../../lib/api';
 import { useLoad } from '../../lib/useLoad';
 import { ago, clock, human } from '../../lib/format';
 import Status from '../../ui/Status';
+import Icon from '../../ui/Icon';
 import { Empty, ErrorBox, Skeleton } from '../../ui/Feedback';
 import { useApp } from '../../app/context';
 import { preview, ruleText } from './preview';
@@ -26,6 +27,21 @@ export default function Simulator() {
   useEffect(() => { if (devices.data && !devices.data.some(x => x.id === deviceId)) setDeviceId(devices.data[0]?.id || ''); }, [devices.data]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { setAuto(false); }, [deviceId]);
 
+  const [clips, setClips] = useState([]);
+  const [sending, setSending] = useState(false);
+  // Each clip gets its own event ID; the server classifies it with the trained model.
+  const sendClips = async () => {
+    setSending(true);
+    for (const f of clips) {
+      try {
+        const r = await api(`/devices/${deviceId}/audio`, { method: 'POST', audio: f, headers: { 'X-Event-Id': `aud-${newId()}` } });
+        const i = r.inference;
+        note(`AI: ${f.name}`, true, `${i.testEmbedder ? '[Test embedder, not real] ' : ''}Model heard ${i.label} (${Math.round(i.confidence * 100)}%), stored as ${human(i.eventType).toLowerCase()}${r.alertPreview ? `; a ${r.alertPreview.toLowerCase()} alert will be raised.` : '; no alert.'}`);
+      } catch (e) { note(`AI: ${f.name}`, false, e.message); }
+    }
+    setSending(false);
+    devices.reload();
+  };
   const note = (action, ok, detail) => setLog(l => [{ id: newId(), at: new Date(), action, ok, detail }, ...l].slice(0, 30));
   const heartbeat = async () => {
     try {
@@ -68,13 +84,14 @@ export default function Simulator() {
   if (!h) return <div className="panel"><Empty title="Choose a house to simulate">Use the House menu at the top, then pick one of its devices.</Empty></div>;
   if (catalog.loading || devices.loading) return <Skeleton rows={6} label="Loading simulator" />;
   if (catalog.error) return <ErrorBox error={catalog.error} onRetry={catalog.reload} />;
-  const rules = catalog.data.alertRules;
+  // Model-only event types are produced by the trained model, not composed by hand.
+  const rules = catalog.data.alertRules.filter(r => r.model !== 'trained-model');
   const rule = rules.find(r => r.type === type);
   const outcome = preview(rule, Number(confidence));
 
   return (
     <>
-      <p className="banner banner-muted">Synthetic devices and events only. This stands in for AWS IoT Core and for a trained classifier; no real audio, video or inference is involved.</p>
+      <p className="banner banner-muted">Devices here are simulated and stand in for AWS IoT Core. Events you compose are synthetic and decided by rules; recorded clips you send are classified by the real trained model.</p>
       <div className="grid-sim">
         <section className="panel" aria-labelledby="sd-h">
           <header className="panel-head"><h2 id="sd-h">Device</h2></header>
@@ -120,6 +137,18 @@ export default function Simulator() {
           <div className="row wrap">
             <button className="btn btn-primary" onClick={() => emit(false)} disabled={!d}>Send event</button>
             <button className="btn" onClick={() => emit(true)} disabled={!last.current}>Replay last event</button>
+          </div>
+          <div className="audio-send">
+            <h3>Recorded audio, classified by the trained AI model</h3>
+            <p className="hint">Choose WAV clips, for example from your dataset. Each one is sent as this device's microphone capture; the model decides what it heard, and the alert rules decide what happens next.</p>
+            <label className={`dropzone dropzone-sm ${clips.length ? 'has-file' : ''}`}>
+              <Icon name="upload" size={18} />
+              <span>{clips.length ? `${clips.length} clip${clips.length > 1 ? 's' : ''}: ${clips.map(f => f.name).slice(0, 3).join(', ')}${clips.length > 3 ? '…' : ''}` : 'Choose WAV clips'}</span>
+              <input type="file" multiple accept=".wav,audio/wav,audio/x-wav" onChange={e => setClips([...e.target.files])} />
+            </label>
+            {d && !(d.capabilities || []).includes('audio')
+              ? <p className="hint">This device has no audio capability. Choose a microphone.</p>
+              : <button className="btn btn-primary" onClick={sendClips} disabled={!d || !clips.length || sending}>{sending ? 'Classifying' : `Send ${clips.length > 1 ? `${clips.length} clips` : 'clip'} to the model`}</button>}
           </div>
         </section>
 

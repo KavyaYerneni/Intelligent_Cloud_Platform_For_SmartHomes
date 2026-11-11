@@ -5,6 +5,7 @@ import { ago, human, when } from '../../lib/format';
 import Status from '../../ui/Status';
 import { Empty, ErrorBox, Skeleton, StaleNote } from '../../ui/Feedback';
 import { useApp } from '../../app/context';
+import { sourceLabel } from '../../lib/source';
 import HouseMap from './HouseMap';
 import HouseDrawer from './HouseDrawer';
 import { needsAttention, reason } from './health';
@@ -88,7 +89,7 @@ export default function Overview() {
               {s.recentEvents.map(e => (
                 <li key={e.id}>
                   <span className={`act-mark act-${e.type}`} aria-hidden="true" />
-                  <span className="grow"><strong>{human(e.type)}</strong><small>{e.deviceName} at {e.houseName}, {e.source}{e.confidence !== null ? `, ${Math.round(e.confidence * 100)}% confidence` : ''}</small></span>
+                  <span className="grow"><strong>{human(e.type)}</strong><small>{e.deviceName} at {e.houseName}, {sourceLabel(e.source)}{e.confidence !== null ? `, ${Math.round(e.confidence * 100)}% confidence` : ''}</small></span>
                   <span className="act-time">{ago(e.occurredAt)}</span>
                 </li>
               ))}

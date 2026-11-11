@@ -6,6 +6,8 @@ import Status from '../../ui/Status';
 import { Drawer } from '../../ui/Overlay';
 import { ErrorBox, Skeleton } from '../../ui/Feedback';
 import { useApp } from '../../app/context';
+import { sourceLabel } from '../../lib/source';
+import { Bar } from '../ai/Bar';
 
 /** One event across both stores: the PostgreSQL reference and the MongoDB detail. */
 export default function EventDrawer({ id, onClose }) {
@@ -22,7 +24,7 @@ export default function EventDrawer({ id, onClose }) {
         <h3>What happened</h3>
         <dl className="facts">
           <dt>Occurred</dt><dd>{when(x.occurredAt, x.timezone)}</dd>
-          <dt>Source</dt><dd>{x.source === 'simulator' ? 'Simulator (synthetic)' : human(x.source)}</dd>
+          <dt>Source</dt><dd>{x.source === 'simulator' ? 'Simulator (synthetic)' : sourceLabel(x.source)}</dd>
           <dt>Confidence</dt><dd>{pct(x.confidence)}</dd>
           <dt>Alert</dt><dd>{x.alertId ? <button className="link" onClick={() => go('alerts', x.alertId)}>Open the alert this event belongs to</button> : 'No alert (below threshold or routine)'}</dd>
         </dl>
@@ -37,7 +39,7 @@ export default function EventDrawer({ id, onClose }) {
       </section>
       <section className="drawer-section">
         <h3>Classification</h3>
-        {x.aiResult ? (
+        {x.aiResult && x.source === 'model' ? <ModelResult r={x.aiResult} /> : x.aiResult ? (
           <dl className="facts">
             <dt>Label</dt><dd>{human(x.aiResult.label)}</dd>
             <dt>Decided by</dt><dd>{x.aiResult.model === 'deterministic-rules' ? 'Deterministic safety rule' : `${x.aiResult.model} ${x.aiResult.modelVersion}`}</dd>
@@ -55,5 +57,28 @@ export default function EventDrawer({ id, onClose }) {
         {raw && <pre className="raw">{JSON.stringify({ reference: { ...x, detail: undefined, aiResult: undefined }, mongoDetail: x.detail, aiResult: x.aiResult }, null, 2)}</pre>}
       </section>
     </Drawer>
+  );
+}
+
+/** Classification by the trained model: what it heard, how sure, and with which exact model file. */
+function ModelResult({ r }) {
+  return (
+    <>
+      {r.inference === 'TEST_EMBEDDER' && <p className="banner banner-bad">Classified with the test embedder: not a real prediction.</p>}
+      <dl className="facts">
+        <dt>Model heard</dt><dd><strong>{r.label}</strong>, {Math.round(r.confidence * 100)}% confident</dd>
+        <dt>Became</dt><dd>{human(r.eventType)}</dd>
+        <dt>Decided by</dt><dd>Trained model {r.model} {r.modelVersion} on {r.backbone} embeddings{r.latencyMs != null ? `, ${Math.round(r.latencyMs)} ms` : ''}</dd>
+        <dt>Model file</dt><dd className="mono">SHA-256 {String(r.modelSha256).slice(0, 16)}…</dd>
+        {r.audio && <><dt>Clip</dt><dd>{r.audio.durationSeconds} s at {r.audio.sampleRate} Hz</dd></>}
+      </dl>
+      {r.probabilities?.length > 0 && (
+        <ul className="label-bars">
+          {r.probabilities.map(p => (
+            <li key={p.label}><span className="lb-name">{p.label}</span><Bar value={p.probability} label={`${Math.round(p.probability * 100)}%`} tone={p.label === r.label ? 'ok' : 'muted'} /><span className="lb-meta">{(p.probability * 100).toFixed(1)}%</span></li>
+          ))}
+        </ul>
+      )}
+    </>
   );
 }

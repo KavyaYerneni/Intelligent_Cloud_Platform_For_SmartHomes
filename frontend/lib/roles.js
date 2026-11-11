@@ -8,6 +8,8 @@ export const can = (user, action) => {
     case 'respond': return r === 'operator' || r === 'responder';
     case 'dataOps': return r === 'operator';
     case 'simulate': return r === 'operator' || r === 'technician';
+    case 'aiView': return r === 'operator' || r === 'technician';
+    case 'aiManage': return r === 'operator';
     default: return false;
   }
 };

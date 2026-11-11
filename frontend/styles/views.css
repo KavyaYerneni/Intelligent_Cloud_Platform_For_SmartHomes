@@ -252,3 +252,32 @@
   .login-story .wordmark { margin-bottom: 28px; }
   .login-foot { margin-top: 20px; }
 }
+
+/* ---------- AI models */
+.grid-model { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+.grid-model .panel h3 { margin: 18px 0 8px; }
+.grid-model .panel h3:first-of-type { margin-top: 0; }
+.model-name { font-size: var(--fs-16) !important; line-height: 1.3 !important; padding-top: 4px; }
+.label-bars { list-style: none; margin: 0 0 14px; padding: 0; display: grid; gap: 8px; }
+.label-bars li { display: grid; grid-template-columns: minmax(120px, 170px) 1fr 104px; align-items: center; gap: 12px; font-size: var(--fs-13); }
+.lb-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lb-meta { color: var(--ink-2); text-align: right; font-size: var(--fs-12); }
+.bar { display: block; height: 10px; border-radius: 5px; background: var(--slate-bg); overflow: hidden; }
+.bar-fill { display: block; height: 100%; border-radius: 5px; background: var(--mark, var(--navy-2)); min-width: 2px; transition: width .3s ease-out; }
+.bar.tone-ok, .bar.tone-warn, .bar.tone-muted, .bar.tone-bad { background: var(--slate-bg); }
+.bar.tone-muted .bar-fill { background: #9aa8b5; }
+.dropzone { position: relative; display: grid; justify-items: center; gap: 4px; padding: 26px 16px; margin: 0 0 14px; border: 2px dashed var(--line-strong); border-radius: var(--r-md); color: var(--ink-2); text-align: center; cursor: pointer; background: var(--sunken); }
+.dropzone:hover, .dropzone:focus-within { border-color: var(--navy-2); color: var(--ink); }
+.dropzone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.dropzone span { font-weight: 600; overflow-wrap: anywhere; }
+.dropzone.has-file { border-style: solid; border-color: var(--teal-mark); background: #f2faf8; }
+.dropzone-sm { padding: 12px 14px; grid-auto-flow: column; justify-content: start; gap: 10px; margin-bottom: 10px; }
+.verdict { display: flex; align-items: baseline; flex-wrap: wrap; gap: 12px; margin: 0 0 8px; }
+.verdict-label { font: 800 var(--fs-26)/1.1 var(--display); color: var(--navy); }
+.verdict-conf { color: var(--ink-2); font-weight: 600; }
+.row-weak td { background: #fffaf0; }
+.audio-send { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+.audio-send h3 { margin-bottom: 6px; }
+.audio-send .hint { margin-bottom: 10px; }
+.banner code { background: rgba(255, 255, 255, .6); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+@media (max-width: 1180px) { .grid-model { grid-template-columns: 1fr; } }

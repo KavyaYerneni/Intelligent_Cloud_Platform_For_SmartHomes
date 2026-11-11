@@ -8,6 +8,7 @@ import { Dialog } from '../../ui/Overlay';
 import { Field, FormError, useSubmit } from '../../ui/Form';
 import { ErrorBox, Skeleton, useToast } from '../../ui/Feedback';
 import { useApp } from '../../app/context';
+import { sourceDetail } from '../../lib/source';
 import { STEPS, STEP_LABEL, VERB, noteRequirement, reached } from './lifecycle';
 
 const ACTION_TEXT = { ALERT_CREATED: 'Alert raised', ALERT_GROUPED: 'Matching event grouped into this alert', ALERT_TRANSITION: 'State changed', ALERT_ASSIGNED: 'Assigned', SIMULATED_NOTIFICATION: 'Simulated notification attempt' };
@@ -107,7 +108,7 @@ export default function AlertDetail({ id, onChanged }) {
           <div key={e.id} className="evidence">
             <div className="grow">
               <strong>{human(e.type)}</strong>
-              <small>{e.source === 'simulator' ? 'Simulated event' : `From ${e.source}`}, {when(e.occurredAt, a.timezone)}</small>
+              <small>{sourceDetail(e.source)}, {when(e.occurredAt, a.timezone)}</small>
               {e.confidence !== null && <div className="conf" aria-label={`Confidence ${pct(e.confidence)}`}><span style={{ width: pct(e.confidence) }} /><em>{pct(e.confidence)} confidence</em></div>}
             </div>
             <button className="btn btn-sm" onClick={() => go('data', e.id)}>Stored record</button>

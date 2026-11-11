@@ -8,11 +8,12 @@ import { Confirm } from '../../ui/Overlay';
 import { Field, FormError, useSubmit } from '../../ui/Form';
 import { Empty, ErrorBox, Skeleton, Tabs, useToast } from '../../ui/Feedback';
 import { useApp } from '../../app/context';
+import { sourceLabel } from '../../lib/source';
 import EventDrawer from './EventDrawer';
 import { download, toCsv } from './csv';
 
 const PRESETS = [['1h', 'Last hour', 3600e3], ['24h', 'Last 24 hours', 86400e3], ['7d', 'Last 7 days', 7 * 86400e3], ['31d', 'Last 31 days', 31 * 86400e3], ['custom', 'Custom range']];
-const TYPES = ['smoke_alarm', 'human_help_sound', 'unusual_sound', 'normal_appliance_sound', 'telemetry'];
+const TYPES = ['smoke_alarm', 'human_help_sound', 'unusual_sound', 'normal_appliance_sound', 'normal_activity_sound', 'telemetry'];
 const toLocalInput = d => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 
 export default function DataOps({ arg }) {
@@ -41,6 +42,7 @@ function HealthStrip() {
   const items = [
     ['PostgreSQL', <Status value={x.postgres} />, 'Workflow records'],
     ['MongoDB', <Status value={x.mongo} />, `Event detail, indexes ${x.indexStatus.toLowerCase()}`],
+    ['AI inference', <Status value={x.inference?.status || 'UNAVAILABLE'} label={x.inference?.testOnly ? 'Test mode' : undefined} />, x.inference?.status === 'UNAVAILABLE' ? 'Service not reachable' : x.inference?.testOnly ? 'Test embedder, not real' : 'YAMNet + trained model'],
     ['Waiting to store', x.backlog, x.backlog ? `Oldest ${x.lagSeconds} s` : 'Nothing waiting'],
     ['Quarantined', x.quarantined, x.quarantined ? 'Needs an operator retry' : 'None'],
   ];
@@ -95,7 +97,7 @@ function History({ house, live }) {
                   <td>{when(e.occurredAt, house.timezone)}</td>
                   <td><a className="link" href={`#data/${encodeURIComponent(e.id)}`}>{human(e.type)}</a></td>
                   <td>{e.deviceName}</td>
-                  <td>{e.source === 'simulator' ? 'Simulator' : human(e.source)}</td>
+                  <td>{sourceLabel(e.source)}</td>
                   <td>{pct(e.confidence)}</td>
                   <td><Status value={e.processingState} /></td>
                 </tr>))}</tbody>

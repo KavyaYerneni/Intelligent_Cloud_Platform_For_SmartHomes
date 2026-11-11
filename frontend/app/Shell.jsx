@@ -10,6 +10,7 @@ export const VIEWS = [
   { id: 'alerts', label: 'Alerts', icon: 'alert', title: 'Alerts & response' },
   { id: 'data', label: 'Data operations', icon: 'data', title: 'Data operations' },
   { id: 'simulator', label: 'Simulator', icon: 'play', title: 'Simulation studio', when: u => can(u, 'simulate') },
+  { id: 'ai', label: 'AI models', icon: 'wave', title: 'AI models', when: u => can(u, 'aiView') },
 ];
 
 const LIVE_TEXT = { live: 'Live', connecting: 'Connecting', reconnecting: 'Reconnecting', stale: 'No updates, reconnecting', unauthorized: 'Live updates stopped' };
