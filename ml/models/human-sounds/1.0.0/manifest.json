@@ -1,0 +1,67 @@
+{
+  "name": "human-sounds",
+  "version": "1.0.0",
+  "displayName": "Human sound classifier",
+  "description": "Classifies a short audio clip into 10 human non-speech sound classes. YAMNet produces a 1024-value embedding per 0.48 s frame; the frames are averaged and a small dense network trained by the team predicts the class.",
+  "file": "model.keras",
+  "sha256": "f067c9c6366a41b075e4fb86eeb0c3c085eccf64e725080c87df898a65c56292",
+  "framework": "Keras 3.8.0 on TensorFlow (saved 2025-03-17)",
+  "architecture": "Input(1024) > Dense(512, relu) > Dropout(0.3) > Dense(256, relu) > Dropout(0.3) > Dense(10, softmax)",
+  "backbone": {
+    "name": "YAMNet",
+    "handle": "https://tfhub.dev/google/yamnet/1",
+    "publisher": "Google (AudioSet, 521 classes)",
+    "embeddingSize": 1024,
+    "use": "Frame embeddings averaged over the clip; YAMNet itself is not retrained."
+  },
+  "input": {
+    "format": "WAV (PCM 8/16/32-bit or float)",
+    "sampleRate": 16000,
+    "channels": 1,
+    "normalisation": "16-bit samples divided by 32767, as in the training notebook",
+    "resampling": "scipy.signal.resample (FFT), as in the training notebook",
+    "minSeconds": 0.5,
+    "maxSeconds": 30
+  },
+  "classes": [
+    "Baby cry, infant cry",
+    "Breathing",
+    "Brushing teeth",
+    "Clapping",
+    "Cough",
+    "Laughter",
+    "Pouring water",
+    "Sneeze",
+    "Snoring",
+    "Walk, footsteps"
+  ],
+  "training": {
+    "source": "Programs/Human_model.ipynb (Google Colab)",
+    "data": "cleaned_file2.xlsx: 688 labelled rows of ESC-50-style 5-second clips, 385 unique recordings (303 rows are exact duplicates)",
+    "split": "70/30 train/test, stratified by row, random_state=42",
+    "epochs": 30,
+    "batchSize": 16,
+    "optimizer": "Adam, learning rate 0.001",
+    "loss": "sparse categorical cross-entropy",
+    "classOrder": "sklearn LabelEncoder (alphabetical), matching the classes list above"
+  },
+  "reportedMetrics": {
+    "source": "Human_model.ipynb, evaluation cell output",
+    "testRows": 207,
+    "accuracy": 0.9082,
+    "macro": { "precision": 0.94, "recall": 0.91, "f1": 0.91 },
+    "perClass": {
+      "Baby cry, infant cry": { "precision": 1.0, "recall": 0.96, "f1": 0.98, "support": 23 },
+      "Breathing": { "precision": 0.95, "recall": 0.9, "f1": 0.92, "support": 20 },
+      "Brushing teeth": { "precision": 1.0, "recall": 1.0, "f1": 1.0, "support": 23 },
+      "Clapping": { "precision": 0.95, "recall": 1.0, "f1": 0.98, "support": 20 },
+      "Cough": { "precision": 1.0, "recall": 0.45, "f1": 0.62, "support": 22 },
+      "Laughter": { "precision": 0.91, "recall": 0.91, "f1": 0.91, "support": 22 },
+      "Pouring water": { "precision": 1.0, "recall": 1.0, "f1": 1.0, "support": 18 },
+      "Sneeze": { "precision": 0.58, "recall": 1.0, "f1": 0.74, "support": 21 },
+      "Snoring": { "precision": 1.0, "recall": 0.95, "f1": 0.97, "support": 19 },
+      "Walk, footsteps": { "precision": 1.0, "recall": 0.95, "f1": 0.97, "support": 19 }
+    },
+    "caveat": "The split was made over spreadsheet rows, and 303 of 688 rows are exact duplicates, so test rows can have identical copies in training. Treat these numbers as an upper bound. Run ml/evaluate.py on recordings outside the training list for an honest estimate."
+  }
+}

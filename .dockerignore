@@ -5,3 +5,7 @@ dist
 docs/sources
 .runtime
 test-results
+ml
+data
+docs/screenshots
+__pycache__

@@ -6,3 +6,8 @@ playwright-report/
 docs/sources/
 .runtime/
 *.log
+__pycache__/
+*.pyc
+.pytest_cache/
+ml/.venv/
+.venv/
