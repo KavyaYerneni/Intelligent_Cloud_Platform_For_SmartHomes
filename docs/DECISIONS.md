@@ -13,6 +13,13 @@ The five supplied designs are requirement evidence, not instructions to provisio
 9. House owners can view and acknowledge assigned houses; technicians manage inventory; responders manage alert response; operators manage their tenant and data operations. No implicit global staff bypass. Cross-tenant administration and production IAM remain deferred.
 10. Default heartbeat timeout 45 seconds, accepted ingress age 24 hours, future skew 60 seconds, query window <=31 days, page size <=100, request payload <=64 KiB. Archived houses/rooms require children to be archived first.
 
+11. Rule tables are data. `ALERT_RULES`, `COMMANDS` and `DEVICE_TYPES` in domain.js drive validation, `classify()`, `GET /api/v1/catalog`, the simulator outcome preview and the command menu, so none of them can drift. A parity test compares the preview with `classify()` at every 0.01 confidence step.
+12. UI redesign (docs/UI_DESIGN.md). Kept the team's Hearth name, navy palette and fonts. Every status shows text, a shape and a color. Browser prompt/confirm dialogs were replaced by labelled dialogs that explain the effect. Raw JSON is behind "Show raw record". Severity and alert state use different shapes so they are not read as two severities.
+13. House health keeps rule B-D-02 (only critical/high overrides). The overview's attention list additionally includes healthy houses with an open medium alert, so a house with an open alert is never described as "all clear".
+14. Session token in sessionStorage (cleared when the tab closes) so a page reload during a demo keeps the session. No operational data is stored in the browser.
+15. `worker_cursor` moved from a per-second runtime CREATE TABLE into migration 002; `live_events` rows older than LIVE_EVENT_RETENTION_HOURS (default 24) are pruned once the heartbeat cursor has passed them.
+16. `GET /dashboard/preferences` returns `saved:false` with defaults when nothing is stored, so the map can fit to the houses instead of a fixed center.
+
 Milestones: (1) contracts/schema/security, (2) inventory and event-to-alert pipeline, (3) integrated UI/live map/simulator/data operations, (4) tests and component demonstration handoff. No cloud rollout is part of these milestones.
 
 Implementation references: [Express async errors](https://expressjs.com/en/5x/guide/error-handling/), [PostgreSQL driver transactions](https://node-postgres.com/features/transactions), [MongoDB indexes](https://www.mongodb.com/docs/drivers/node/current/indexes/).

@@ -2,18 +2,19 @@
 
 The backend computes counts and house health from authorized SQL records. React consumes a snapshot, then subscribes to the durable live log. A live message triggers a new authoritative snapshot; this is deliberately simpler than maintaining several independent optimistic caches. Message versions prevent replaying older notifications. PostgreSQL transaction boundaries ensure the live log cannot announce uncommitted state.
 
-Main files: `backend/dashboard.js`, `backend/live.js`, `frontend/Dashboard.jsx`, `frontend/Map.jsx`, `frontend/useLive.js`. Unit test: `tests/unit/dashboard.test.js`. Integration tests verify scoped socket delivery and reject another tenant's subscription.
+Main files: `backend/dashboard.js`, `backend/live.js`, `frontend/views/dashboard/` (`Overview.jsx`, `HouseMap.jsx`, `HouseDrawer.jsx`, `health.js`), `frontend/lib/useLive.js`, `frontend/app/Shell.jsx` (live status pill). Tests: `tests/unit/dashboard.test.js` (health precedence), `tests/ui/attention.test.js` (attention ranking and wording), integration socket scope tests, and the e2e scenario's live alert badge check. Design rationale: `docs/UI_DESIGN.md`.
 
 ## Individual demonstration
 
-1. Sign in as operator. Show KPI totals, generated timestamp, authorized houses, map/table and recent activity. Explain that data comes from the API, not browser storage.
-2. Select Willow House on map or table. Show devices, active alerts and timeline. Save map center/zoom, refresh and verify preference. Navigate to inventory/alerts from house details.
-3. In another browser tab/session, send a simulator heartbeat and smoke alarm for H001. Show online state, alert count and ALERT marker without a page reload. Explain HIGH/CRITICAL > OFFLINE > HEALTHY/DEGRADED precedence.
-4. Stop the API while keeping the browser open. Show disconnected/stale warning and retained last snapshot. Restart API and show automatic reconnect/snapshot refresh. Disable network tiles separately to show the table fallback.
-5. Sign in as owner (only H001) or outsider (T002). Show restricted houses. Explain server-side scope checks; UI filtering is not the security boundary.
+1. Sign in as **Cloud operator**. The overview opens on the **Needs attention** rail: houses ranked alert, offline, degraded, then healthy-with-medium-alert, each with a one-sentence reason. Point out the count strip, snapshot time and the green **Live** pill with its last-update time. Data comes from the API, not browser storage.
+2. Select a house on the rail, map marker or house table. The **house drawer** shows open alerts, devices grouped by room and the last 24 hours in the house's time zone. Use **Save map view**, reload, and show the saved center/zoom. Follow a device or alert link out of the drawer.
+3. In a second window open **Simulator**, send a heartbeat and a smoke alarm for Willow House. Without reloading, the first window's rail, marker, counts and the red **Alerts** badge update. Explain precedence: critical/high alert > offline > degraded > healthy (rule B-D-02), and that a healthy house with a medium alert is still listed so it is never called "all clear".
+4. Stop the API while the browser stays open. The pill turns to **Reconnecting**, a banner says screens may be out of date, and the last data stays visible. Restart the API: it reconnects and reloads automatically. If map tiles cannot load, a note points to the house table, which has the same information.
+5. Sign out and sign in as **House owner** (Willow only). The House menu, rail and map show only Willow House. Explain that the server scopes every query and the WebSocket subscription; the UI only reflects that.
 
 ## Recording checklist
 
+- Show the attention rail first and read one reason sentence aloud; it is the screen's main idea (see `docs/UI_DESIGN.md`).
 - Show your name/component and the local URL; keep `.env` and passwords off screen.
 - Capture a readable map, table, timestamps, event change and reconnect.
 - Explain one API request/response and the health-priority unit test.

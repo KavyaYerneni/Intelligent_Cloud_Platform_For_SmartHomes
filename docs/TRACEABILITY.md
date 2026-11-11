@@ -4,25 +4,28 @@ Read against all five supplied Word designs, including API tables, rules, state 
 
 | Requirement | Owner/component | Implementation | Verification source | Demo |
 |---|---|---|---|---|
-| F-D-01 / FR-15 scoped summary | Yaswanth | backend/dashboard.js snapshot, frontend/Dashboard.jsx | dashboard unit; integrated scenario | Dashboard 1–2 |
-| F-D-02, B-D-04 versioned live events | Yaswanth | backend/live.js durable sequence; frontend/useLive.js | integration socket assertion | Dashboard 3 |
-| F-D-03 / FR-16 map markers | Yaswanth | frontend/Map.jsx; backend houseHealth | dashboard unit; browser/manual | Dashboard 2–3 |
+| F-D-01 / FR-15 scoped summary | Yaswanth | backend/dashboard.js snapshot, frontend/views/dashboard/Overview.jsx | dashboard unit; ui attention.test.js; e2e overview step | Dashboard 1–2 |
+| F-D-02, B-D-04 versioned live events | Yaswanth | backend/live.js durable sequence; frontend/lib/useLive.js | integration socket assertion | Dashboard 3 |
+| F-D-03 / FR-16 map markers | Yaswanth | frontend/views/dashboard/HouseMap.jsx; backend houseHealth | dashboard unit; browser/manual | Dashboard 2–3 |
 | F-D-04 / B-D-03 stale/reconnect | Yaswanth | useLive heartbeat timeout/backoff/snapshot | manual failure demo | Dashboard 4 |
 | F-D-05 drill-down | Yaswanth | map/table selection; device/alert/timeline views | browser scenario/manual | Dashboard 2 |
-| B-D-01 scoped records | Shared/Yaswanth | security.house/inScope, snapshot query scope | unit scope + integration outsider/owner | Dashboard 5 |
+| B-D-01 scoped records | Shared/Yaswanth | security.house/inScope, snapshot query scope | unit scope + integration outsider/owner; e2e owner test | Dashboard 5 |
 | B-D-02 health precedence | Yaswanth | domain.houseHealth | dashboard.test.js | Dashboard 3 |
 | Preferences API | Yaswanth | preferences table, GET/PUT, map view save | manual | Dashboard 2 |
-| Loading/empty/error/unauthorized | Yaswanth/shared UI | main.jsx and panel components | browser/manual | Dashboard 4–5 |
-| F-I-01 / B-I-01 / FR-04–07 | Siddharth | inventory house/room/device creation, credentials | integration duplicate/scope | Devices 1–3 |
+| Shared rule catalog (ALERT_RULES, COMMANDS, DEVICE_TYPES) | Kavya/Siddharth | domain.js tables; GET /api/v1/catalog | ui-support catalog test; rules-parity | Alerts 1, Devices 5 |
+| Server-side device filters, totals, room counts | Siddharth | GET /devices q/status/type/roomId/total; rooms deviceCount/onlineCount | ui-support integration | Devices 2–3 |
+| Live log retention | Srija/shared | migration 002, processing.pruneLiveEvents | code review; not separately tested | Data 2 |
+| Loading/empty/error/unauthorized | Yaswanth/shared UI | frontend/ui/Feedback.jsx state components, lib/useLoad.js | browser/manual | Dashboard 4–5 |
+| F-I-01 / B-I-01 / FR-04–07 | Siddharth | inventory house/room/device creation, credentials | integration duplicate/scope; ui-support existingDeviceId; e2e registration + duplicate | Devices 1–3 |
 | F-I-02 / FR-08 versioned config | Siddharth | configurations table, desired/reported versions | manual simulator | Devices 4 |
 | F-I-03 / B-I-02 / FR-09 heartbeat | Siddharth | heartbeat route, worker expiry | unit timestamp, integration replay | Devices 3, 6 |
 | F-I-04 / B-I-03 commands | Siddharth | allowlist, idempotency, state checks, ACK API | API integration extensions/manual | Devices 5 |
 | F-I-05 / B-I-04 archive | Siddharth | guarded soft archive, credential revocation | integration archived heartbeat | Devices 7 |
 | House/room management | Siddharth | creation/edit/archive APIs, UI house edit/archive | integration creation/manual | Devices 1–2 |
 | F-A-01 / FR-11 event validation | Kavya | domain.eventSchema, alerts.acceptEvent | data unit + integration | Alerts 1 |
-| F-A-02 / B-A-01/02 severity | Kavya | domain.classify simulated/rule adapter | alerts unit boundaries | Alerts 1–2 |
+| F-A-02 / B-A-01/02 severity | Kavya | domain.classify simulated/rule adapter | alerts unit boundaries; ui rules-parity.test.js | Alerts 1–2 |
 | F-A-03 / B-A-03 / FR-12 grouping | Kavya | processing device lock + grouping window | integration replay; grouping tests | Alerts 2 |
-| F-A-04 / B-A-04 / FR-13 lifecycle | Kavya | checkTransition, SQL row lock/version, audit | alerts unit + API scenario | Alerts 3–5 |
+| F-A-04 / B-A-04 / FR-13 lifecycle | Kavya | checkTransition, SQL row lock/version, audit | alerts unit; ui lifecycle.test.js; e2e acknowledge/investigate/resolve | Alerts 3–5 |
 | B-A-05 escalation | Kavya | escalate/state routes + notification record | unit guard/manual | Alerts 4 |
 | F-A-05 / FR-14 durable publish | Kavya/shared | transactional live log, notification job attempts | socket integration/manual failure | Alerts 6 |
 | Assignment, allowed actions, notes | Kavya | scoped active assignee, allowedActions DTO | integration/manual | Alerts 3–5 |
@@ -34,7 +37,7 @@ Read against all five supplied Word designs, including API tables, rules, state 
 | F-DATA-05 health | Srija | data.health stores/indexes/lag/backlog | manual dependency failure | Data 3 |
 | Relational integrity/migrations | Srija | 001_initial.sql composite FKs/uniques/checks, migrate.js | migrations + integration | Data 2 |
 | Mongo indexes/retention | Srija | db.indexes, 90d TTL telemetry/status | live index inspection/manual | Data 2 |
-| Authorized operations UI | Srija | Data.jsx operator controls and server role checks | integration technician denial | Data 5 |
+| Authorized operations UI | Srija | views/data/DataOps.jsx operator tabs and server role checks | integration technician denial | Data 5 |
 | CSV export | Srija | authorized displayed-page export, spreadsheet formula escaping | manual | Data 1 |
 | FR-01/02 authentication/RBAC | Shared | local JWT/password hashes, per-request current profile, house scopes | security unit/API tests | All sign-in and denial |
 | FR-03 tenant management | Shared | tenant table/status guard and seeded tenants only | schema inspection | Deferred admin UI |
@@ -49,7 +52,7 @@ Read against all five supplied Word designs, including API tables, rules, state 
 | NFR-07 retry/idempotency | Srija/Kavya | durable retries, bounded quarantine | unit/integration/manual outage | Data 3–4 |
 | NFR-08 RPO/RTO | Shared/cloud | deployment backup/restore instructions only | Restore rehearsal deferred | Hosting handoff |
 | NFR-09 maintainability | Shared | modules, migrations, health, env, versioned contracts | build/unit/API checks | Component explanation |
-| NFR-10/11 usability/compatibility | UI owners | responsive layout, labeled forms, focus styling, three-step navigation | browser/manual; Safari not tested | Recording checklist |
+| NFR-10/11 usability/compatibility | UI owners | responsive layout, labeled forms, focus styling, three-step navigation | e2e (Chromium); screenshots reviewed at 1440 and 820 px; Safari/Edge not tested | Recording checklist |
 | NFR-12 observability | Shared | correlation IDs, audit, retry/lag counts, error logs | API assertions/manual | Data 5 |
 
 The API usage examples that omit deviceId/correlationId/schemaVersion are abbreviated illustrations, not sufficient ingestion bodies. The implementation uses the complete corrected envelope. The individual design's explicit state table takes precedence over its shortened storyboard. See DECISIONS.md for these and the durable staging change.

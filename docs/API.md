@@ -82,3 +82,23 @@ ACTIVE → ACKNOWLEDGED → INVESTIGATING → RESOLVED. ACTIVE, ACKNOWLEDGED and
 Connect `/ws/monitoring`, `/ws/alerts`, or `/ws/device-status`, then send `{token:"<JWT>",houseIds:["H001"]}` within five seconds. These aliases currently share the scoped event stream. Authentication is in the first frame to avoid logging query-string tokens. Requested houses are individually authorized. Session/role changes are checked during streaming. Invalid subscription closes 1008.
 
 CONNECTED includes durable log version; refresh REST snapshot immediately afterward. Notifications contain `{type,eventId,version,houseId,occurredAt,correlationId,payload}`. HEARTBEAT frames prove transport liveness. Discard older versions, reconnect with capped exponential backoff and reload snapshot. The server polls committed PostgreSQL live_events; state and notification rows commit together, so a push never announces rolled-back state. Reconnect uses snapshot recovery rather than indefinite per-client queues. Clients with excessive send backlog are disconnected for refresh.
+
+## Additions and changes for the redesigned UI
+
+All require a signed-in user and are tenant/house scoped like the endpoints above.
+
+| Method and path | Change | Notes |
+|---|---|---|
+| GET /api/v1/catalog | New | `{deviceTypes, commands, alertRules, heartbeatSeconds}` from `backend/domain.js`. The UI and simulator preview use it instead of keeping copies. |
+| GET /api/v1/devices | Extended | Query `houseId`, `roomId`, `q` (name or serial), `status`, `type`, `includeArchived=true`, `page`, `pageSize`. Archived devices are hidden unless requested. Response adds `total`, `pageSize`, and `roomName`/`houseName` per item. Invalid `status`/`type` returns 400. |
+| GET /api/v1/houses/{houseId}/rooms | Extended | Each room adds `deviceCount` (not archived) and `onlineCount`. |
+| GET /api/v1/devices/{deviceId} | Extended | Adds `roomName`, `houseName`, `timezone`. |
+| POST /api/v1/rooms/{roomId}/devices | Changed error | A serial already used in the tenant returns **409 `DUPLICATE_SERIAL`** with `existingDeviceId` and `fieldErrors:[{field:"serialNo"}]` (previously a generic 409 `DUPLICATE`). |
+| POST /api/v1/devices/{deviceId}/commands | Changed error | Capability check reads the command table: a command not supported by the device type returns 400 `CAPABILITY`. |
+| GET /api/v1/alerts | Extended | Adds `total`, `pageSize`; each item adds `houseName`, `deviceName`, `roomName`, `timezone`, `assigneeEmail`. Resolved alerts sort after open ones. |
+| GET /api/v1/alerts/{alertId} | Extended | Same names; history entries add `actorEmail`. |
+| GET /api/v1/events/{eventId} | Extended | Adds `deviceName`, `houseName`, `timezone`, `alertId` (the alert this event is evidence for, if any). |
+| GET /api/v1/data/events | Extended | Items add `deviceName`. |
+| GET /api/v1/audit | Extended | Items add `actorEmail`, `houseName`; response adds `pageSize`, `hasMore`. |
+| GET /api/v1/auth/me, POST /auth/login | Extended | User adds `tenantName`. |
+| GET /api/v1/dashboard/preferences | Extended | Adds `saved` (false when returning defaults). |
