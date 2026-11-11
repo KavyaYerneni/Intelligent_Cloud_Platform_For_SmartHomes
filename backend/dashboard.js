@@ -16,9 +16,18 @@ export async function snapshot(actor,q={}){
  const {rows:sounds}=await c.query(`SELECT label,count(*)::int AS count,avg(confidence)::float AS confidence FROM ai_inferences WHERE tenant_id=$1 AND house_id=ANY($2) AND created_at >= $3 AND created_at < $4 AND status='OK' GROUP BY label ORDER BY count DESC LIMIT 12`,[actor.tenant_id,hs,...window]);
  const {rows:hourly}=await c.query(`SELECT date_trunc('hour',created_at) AS hour,count(*)::int AS count FROM ai_inferences WHERE tenant_id=$1 AND house_id=ANY($2) AND created_at >= $3 AND created_at < $4 AND status='OK' GROUP BY 1 ORDER BY 1`,[actor.tenant_id,hs,...window]);
  const {rows:[audioTotals]}=await c.query(`SELECT count(*)::int AS count,count(DISTINCT label)::int AS categories,avg(confidence)::float AS confidence FROM ai_inferences WHERE tenant_id=$1 AND house_id=ANY($2) AND created_at >= $3 AND created_at < $4 AND status='OK'`,[actor.tenant_id,hs,...window]);
+ const timeZone=houses[0]?.timezone||'America/Los_Angeles';
+ const {rows:daily}=await c.query(`WITH days AS (
+ SELECT generate_series((now() AT TIME ZONE $3)::date-6,(now() AT TIME ZONE $3)::date,interval '1 day')::date AS day
+ ), counts AS (
+ SELECT (created_at AT TIME ZONE $3)::date AS day,count(*)::int AS count
+ FROM ai_inferences WHERE tenant_id=$1 AND house_id=ANY($2) AND status='OK'
+ AND created_at >= (((now() AT TIME ZONE $3)::date-6)::timestamp AT TIME ZONE $3)
+ AND created_at<=now() GROUP BY 1)
+ SELECT to_char(d.day,'YYYY-MM-DD') AS day,coalesce(c.count,0)::int AS count FROM days d LEFT JOIN counts c USING(day) ORDER BY d.day`,[actor.tenant_id,hs,timeZone]);
  const {rows:[v]}=await c.query('SELECT COALESCE(max(id),0) AS version FROM live_events');
  const result=houses.map(h=>{const ds=devices.filter(d=>d.house_id===h.id),as=alerts.filter(a=>a.house_id===h.id);return {...dto(h),houseId:h.id,health:houseHealth(ds,as),activeAlertCount:as.length,lastSeen:ds.map(d=>d.last_seen).filter(Boolean).sort((a,b)=>b-a)[0]??null,devices:ds.map(dto),alerts:as.map(dto)};});
- return {audio:{sounds,hourly,...audioTotals},summaryVersion:Number(v.version),generatedAt:new Date().toISOString(),totals:{houses:houses.length,onlineDevices:devices.filter(d=>d.status==='ONLINE').length,offlineDevices:devices.filter(d=>d.status==='OFFLINE').length,activeAlerts:alerts.length},houses:result,recentEvents:recentEvents.map(e=>({...dto(e),alertSeverity:classify(e).severity}))};});
+ return {audio:{sounds,hourly,daily,timeZone,...audioTotals},summaryVersion:Number(v.version),generatedAt:new Date().toISOString(),totals:{houses:houses.length,onlineDevices:devices.filter(d=>d.status==='ONLINE').length,offlineDevices:devices.filter(d=>d.status==='OFFLINE').length,activeAlerts:alerts.length},houses:result,recentEvents:recentEvents.map(e=>({...dto(e),alertSeverity:classify(e).severity}))};});
 }
 dashboard.get('/dashboard/summary',authenticate,async(req,res)=>res.json(await snapshot(req.actor,req.query)));
 dashboard.get('/houses/status',authenticate,async(req,res)=>{if(req.query.status&&!['ALERT','OFFLINE','DEGRADED','HEALTHY'].includes(req.query.status))fail(400,'STATUS','Invalid house health.');const s=await snapshot(req.actor,req.query);const p=page(req.query);res.json({items:s.houses.filter(h=>!req.query.status||h.health===req.query.status).slice(p.offset,p.offset+p.limit)});});

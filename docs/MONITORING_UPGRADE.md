@@ -1,5 +1,13 @@
 # Monitoring upgrade — November 11, 2026
 
+## Compact workspace update
+
+The navigation is now a sticky 40px single row. The document stays at the viewport height; the overview scrolls inside its content area, tables scroll inside bounded containers, and inventory/alerts use independently scrolling panes. Live sound columns have explicit widths, so new labels cannot resize them. Inventory status text wraps within its column.
+
+The charts now show seven calendar-day totals in the selected community timezone and a line of 24 hourly counts. Today's bar transitions to actual new totals over 900ms; no counts are invented between events. Empty dates/hours are zero-filled. SQL aggregates preserve the caller's house scope.
+
+Verification: 12 unit tests, 7 AI/database integration tests (including daily totals and authorization), and 20 UI regression tests passed. Browser measurements confirmed a 40px header and document height equal to the viewport; inventory tree/table and alert queue/detail each have bounded independent scroll areas. Mobile navigation and charts were checked at 390px width.
+
 Open http://localhost:3000 and sign in with an existing demo account and the password in `.env`. The overview now uses a horizontal navigation, restrained indigo palette, hourly sound counts, sound distribution, confidence metrics, a live prediction table, and room connection cards. The original inventory, alert lifecycle, evidence, recovery, map, and model management remain available.
 
 ## Dataset audit

@@ -89,6 +89,10 @@ test('device audio becomes a model event, a HIGH alert and stored provenance; re
  assert.equal(alert.severity,'HIGH');
  const snap=(await call(`/dashboard/summary?houseId=${h.id}`)).body;
  assert.equal(snap.audio.count,1);assert.equal(snap.audio.categories,1);
+ assert.equal(snap.audio.daily.length,7);
+ assert.equal(snap.audio.daily.at(-1).count,1);
+ assert.equal(snap.audio.daily.slice(0,-1).reduce((n,d)=>n+d.count,0),0);
+ assert.equal(snap.audio.timeZone,'America/Los_Angeles');
  assert.equal(snap.recentEvents[0].soundLabel,'Baby cry, infant cry');
  assert.equal(snap.recentEvents[0].roomName,'Bedroom');
  assert.equal(snap.recentEvents[0].alertSeverity,'HIGH');

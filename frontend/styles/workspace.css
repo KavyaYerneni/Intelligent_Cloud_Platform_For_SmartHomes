@@ -1,0 +1,88 @@
+/* The application fits the viewport. Lists and tables own their scroll areas. */
+html,body,#root { height:100%; overflow:hidden; }
+.shell { height:100dvh; min-height:0; max-width:none; margin:0; display:flex; flex-direction:column; overflow:hidden; }
+.sidebar { position:sticky; top:0; z-index:30; height:40px; min-height:40px; max-height:40px; flex:0 0 40px; padding:0 18px; gap:24px; flex-wrap:nowrap; border-bottom:1px solid var(--line); background:#fafafd; }
+.sidebar .wordmark { font-size:19px; flex-shrink:0; }
+.sidebar .wordmark-mark { width:16px; height:16px; }
+.sidebar nav { order:0; flex:1 1 auto; width:auto; min-width:0; height:40px; margin:0; border:0; gap:22px; overflow-x:auto; overflow-y:hidden; scrollbar-width:none; }
+.sidebar nav::-webkit-scrollbar { display:none; }
+.sidebar nav a { height:40px; padding:0; flex-shrink:0; font-size:12px; gap:5px; }
+.sidebar-user { flex:0 0 auto; gap:8px; }
+.sidebar-user strong,.sidebar-user span { display:none; }
+.sidebar .btn-ghost-dark { margin:0; padding:3px 8px; min-height:28px; font-size:11px; }
+.main-col { flex:1; min-height:0; overflow:hidden; }
+.topbar { flex:0 0 auto; padding:10px 20px; gap:16px; min-height:54px; flex-wrap:nowrap; }
+.topbar h1 { font-size:18px; width:auto; }
+.house-picker select { min-height:30px; padding:4px 9px; }
+.content { flex:1; min-height:0; width:100%; max-width:none; padding:12px 20px 18px; overflow:auto; overscroll-behavior:contain; scrollbar-gutter:stable; }
+.table-wrap { overflow:auto; overscroll-behavior:contain; scrollbar-gutter:stable; max-height:clamp(160px,45dvh,540px); }
+.table-wrap table { width:100%; table-layout:fixed; }
+.table-wrap th { position:sticky; top:0; z-index:2; background:#f0eff5; }
+.table-wrap td,.table-wrap th { overflow-wrap:anywhere; }
+.table-wrap .status { max-width:100%; white-space:normal; }
+.table-wrap th { white-space:normal; }
+.login { height:100dvh; overflow:auto; }
+.sound-feed .table-wrap { height:clamp(180px,40dvh,450px); max-height:none; }
+.sound-feed table { min-width:690px; }
+.sound-feed td { height:61px; }
+.sound-feed td .sub { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.view-inventory,.view-alerts { overflow:hidden; display:flex; flex-direction:column; }
+.split-inventory,.split-alerts { flex:1; height:100%; min-height:0; align-items:stretch; overflow:hidden; }
+.split-inventory>.tree { position:static; height:100%; min-height:0; max-height:none; overflow:auto; overscroll-behavior:contain; scrollbar-gutter:stable; }
+.tree>.panel-head { position:sticky; top:-14px; z-index:3; background:var(--surface); padding:8px 6px; }
+.split-inventory>section.panel { height:100%; min-height:0; display:flex; flex-direction:column; overflow:hidden; }
+.split-inventory>section.panel>.panel-head,.split-inventory .filters,.split-inventory .pager { flex:0 0 auto; }
+.split-inventory .table-wrap { flex:1; min-height:0; height:auto; max-height:none; }
+.split-inventory table { min-width:690px; }
+.split-inventory th:nth-child(1) { width:23%; }
+.split-inventory th:nth-child(2) { width:12%; }
+.split-inventory th:nth-child(3) { width:20%; }
+.split-inventory th:nth-child(4) { width:22%; }
+.split-inventory th:nth-child(5) { width:15%; }
+.split-inventory th:nth-child(6) { width:8%; }
+.split-inventory .pager { margin-top:12px; }
+.split-alerts>.queue { position:static; height:100%; min-height:0; max-height:none; overflow:hidden; }
+.queue-list { flex:1; min-height:0; align-content:start; overscroll-behavior:contain; scrollbar-gutter:stable; }
+.queue>.panel-head,.queue>.filters,.queue>.pager { flex:0 0 auto; }
+.alert-pane { min-height:0; height:100%; overflow:auto; overscroll-behavior:contain; scrollbar-gutter:stable; }
+.activity-charts { display:grid; grid-template-columns:1fr 1.25fr; gap:42px; padding:16px 12px 24px; border-bottom:1px solid var(--line); }
+.activity-charts header { display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:8px; }
+.daily-chart h2 { font-size:28px; font-weight:500; }
+.daily-chart h2 small { font-size:13px; color:var(--ink-2); }
+.activity-charts header>span { font-size:11px; color:var(--ink-2); }
+.daily-bars { height:150px; display:flex; align-items:flex-end; gap:20px; padding:0 14px 0 40px; margin:22px 0 30px; border-bottom:1px solid var(--line-strong); background:repeating-linear-gradient(to top,transparent 0,transparent 49px,#e9e7ee 50px); position:relative; }
+.chart-ceiling { position:absolute; left:0; top:-12px; color:var(--ink-2); font-size:10px; }
+.daily-slot { height:100%; flex:1; min-width:0; display:flex; align-items:flex-end; position:relative; }
+.daily-bar { width:100%; min-height:1px; background:#aaa5c7; position:relative; transition:height 900ms ease-out; }
+.daily-bar.today { background:#4837bd; }
+.daily-bar>span { position:absolute; bottom:100%; left:50%; transform:translateX(-50%); font-size:10px; margin-bottom:3px; white-space:nowrap; }
+.daily-slot>small { position:absolute; top:calc(100% + 7px); width:100%; text-align:center; font-size:10px; color:var(--ink-2); }
+.hourly-chart svg { display:block; width:100%; height:205px; margin-top:5px; overflow:visible; }
+.hourly-chart svg text { font:10px Arial,sans-serif; fill:#666571; }
+.audio-insights { padding:24px 12px; }
+@media(max-width:850px) {
+ .sidebar { gap:14px; padding:0 10px; }
+ .sidebar nav { gap:16px; }
+ .sidebar .btn-ghost-dark { font-size:0; gap:0; padding:5px; }
+ .sidebar .btn-ghost-dark .icon { width:16px; height:16px; }
+ .split-inventory { grid-template-columns:180px minmax(0,1fr); gap:10px; }
+ .split-alerts { grid-template-columns:minmax(230px,.7fr) minmax(0,1fr); gap:10px; }
+ .activity-charts { gap:20px; }
+ .topbar { padding:8px 12px; }
+ .content { padding:10px 12px; }
+}
+@media(max-width:600px) {
+ .sidebar .wordmark { font-size:0; gap:0; }
+ .topbar { flex-wrap:wrap; gap:8px; }
+ .topbar h1 { font-size:16px; margin-right:auto; }
+ .house-picker { font-size:11px; }
+ .house-picker select { width:130px; min-width:0; }
+ .topbar .live { font-size:10px; }
+ .activity-charts { grid-template-columns:1fr; padding:8px 0 20px; }
+ .split-inventory { grid-template-columns:125px minmax(0,1fr); }
+ .split-inventory>section.panel { padding:12px; }
+ .split-inventory .filters { max-height:100px; overflow:auto; }
+ .split-inventory .panel-head .row { max-height:75px; overflow:auto; }
+ .split-inventory .pager { flex-wrap:wrap; gap:4px; font-size:10px; }
+ .split-alerts { grid-template-columns:1fr; grid-template-rows:minmax(180px,40%) minmax(0,1fr); }
+}

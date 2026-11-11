@@ -59,7 +59,7 @@ export default function Shell({ view, children, onSignOut, activeAlerts }) {
             Live updates are interrupted. Screens show the last data they loaded and may be out of date. {live.state === 'unauthorized' ? 'Sign in again.' : 'Reconnecting automatically.'}
           </p>
         )}
-        <main id="main" tabIndex={-1} className="content">{children}</main>
+        <main id="main" tabIndex={-1} className={`content view-${view}`}>{children}</main>
       </div>
       
     </div>

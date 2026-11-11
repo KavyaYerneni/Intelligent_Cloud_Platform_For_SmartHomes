@@ -65,7 +65,7 @@ try:
       key=rel+':'+str(chunk);chunk+=1
       if key in done:continue
       heartbeat()
-      framebytes=w.getsampwidth()*w.getnchannels();minimum=int(w.getframerate()*.5)*framebytes
+      framebytes=w.getsampwidth()*w.getnchannels();minimum=((w.getframerate()+1)//2)*framebytes
       if len(frames)<minimum:frames+=(b'\x80' if w.getsampwidth()==1 else b'\0')*(minimum-len(frames))
       buf=io.BytesIO()
       with wave.open(buf,'wb') as out:out.setparams(params);out.writeframes(frames)
@@ -77,6 +77,9 @@ try:
         if e.code==401:login()
         elif e.code==429:time.sleep(60);continue
         elif e.code<500:raise
+        if attempt==3:raise
+        time.sleep(3*(attempt+1))
+       except urllib.error.URLError:
         if attempt==3:raise
         time.sleep(3*(attempt+1))
       else:raise OSError('Inference retry limit exceeded')
