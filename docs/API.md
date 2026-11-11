@@ -102,3 +102,27 @@ All require a signed-in user and are tenant/house scoped like the endpoints abov
 | GET /api/v1/audit | Extended | Items add `actorEmail`, `houseName`; response adds `pageSize`, `hasMore`. |
 | GET /api/v1/auth/me, POST /auth/login | Extended | User adds `tenantName`. |
 | GET /api/v1/dashboard/preferences | Extended | Adds `saved` (false when returning defaults). |
+
+## AI audio model
+
+The Node API is the only public entry point; the inference service (`ml/`) is internal.
+
+| Method and path | Who | Request | Response |
+|---|---|---|---|
+| POST /api/v1/devices/{deviceId}/audio | Device credential (`Authorization: Device <c>`); operator or technician when `SIMULATOR_ENABLED=true` | Body: WAV bytes, `Content-Type: audio/wav`, at most 6 MB. Headers: optional `X-Event-Id` (retry key), optional `X-Captured-At` (ISO time, within 24 h) | **202** `{eventId, processingState, inference:{label, confidence, eventType, probabilities[5], model{name,version,sha256}, audio, latencyMs, audioSetTop, testEmbedder}, alertPreview}`. **200** `{replayed:true, ...}` for a known `X-Event-Id` (no new inference). **400** `EMPTY_AUDIO`, `CAPABILITY`, or the service's audio code (`NOT_WAV`, `AUDIO_TOO_SHORT`...). **403** other device, owner/responder. **409** `MODEL_DISABLED`, `ARCHIVED`. **503** `AI_UNAVAILABLE`, `AI_TIMEOUT`, `MODEL_NOT_LOADED`: retry with the same `X-Event-Id`. |
+| GET /api/v1/ai/models | operator, technician | `fresh=true` skips the 10 s cache | `{service:{reachable, embedder}, active:{name, version, enabled, updatedBy, updatedAt}, models:[manifest + loaded, sha256Verified, evaluation], labelMap:[{label, eventType, why, rule}]}` |
+| PUT /api/v1/ai/models/{name}/settings | operator | `{enabled: boolean, version?: string}` | Active setting for the caller's tenant. Audited as `AI_MODEL_ENABLED` / `AI_MODEL_DISABLED`. 400 `VERSION` if not loaded. |
+| POST /api/v1/ai/test | operator, technician | WAV body; optional `version` query | Inference with all 10 probabilities, `eventType`, `alertPreview`. Creates no event; logged as TEST. |
+| GET /api/v1/ai/stats | operator, technician | `hours` 1 to 168 (default 24) | `{byStatus, byLabel[{label, eventType, count, avgConfidence}], latencyMs{p50,p95}, alertsFromModel, recent[]}`, scoped to the caller's houses. |
+
+`GET /api/v1/catalog` adds `aiLabelMap`. `GET /api/v1/data/health` adds `inference {status, embedder, testOnly, error}`. Events created by the model have `source: "model"`, a new type `normal_activity_sound` is accepted, and `GET /events/{id}` returns `aiResult` with `inference: "TRAINED_MODEL"`, `modelSha256`, `probabilities`, `latencyMs` and `audio`. `POST /events` refuses `source: "model"`.
+
+### Inference service (internal, ml/)
+
+| Method and path | Purpose |
+|---|---|
+| GET /health | `{status: ok|degraded, embedder{kind, loaded, testOnly}, models[{name, version, loaded, error}]}` |
+| GET /models | Registry: manifests, `loaded`, `loadError`, `sha256Verified`, `evaluation` |
+| POST /classify?model=&version= | WAV body. Returns label, confidence, all probabilities sorted, audio facts, embedder, frames, YAMNet's AudioSet top 3, latency. Errors: 400 audio codes, 404 `MODEL_NOT_FOUND`, 413 `AUDIO_TOO_LARGE`, 503 `MODEL_NOT_LOADED` / `EMBEDDER_UNAVAILABLE`. |
+
+If `ML_SERVICE_TOKEN` is set, every call needs header `X-Service-Token`. `tests/integration/ai.test.js` fakes this contract; `ml/tests/test_api.py` checks the real service against it.

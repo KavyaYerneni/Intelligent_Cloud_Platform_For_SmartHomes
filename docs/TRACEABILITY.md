@@ -40,6 +40,11 @@ Read against all five supplied Word designs, including API tables, rules, state 
 | Authorized operations UI | Srija | views/data/DataOps.jsx operator tabs and server role checks | integration technician denial | Data 5 |
 | CSV export | Srija | authorized displayed-page export, spreadsheet formula escaping | manual | Data 1 |
 | FR-01/02 authentication/RBAC | Shared | local JWT/password hashes, per-request current profile, house scopes | security unit/API tests | All sign-in and denial |
+| FR-11 AI events: type, confidence, model version, source | Kavya | backend/ai.js audio adapter, ml/ inference service, AI_LABEL_MAP | unit ai.test.js; integration ai.test.js; e2e ai.spec.js | AI demo 4-5 |
+| AIModel entity (SD 4.1.1): name, version, checksum, enabled | Kavya/Srija | ml manifest + SHA-256 check, ai_model_settings (migration 003), AI models page | ml test_registry; integration model management | AI demo 1, 6 |
+| C3 §2.2 classifier adapter | Kavya | ml/ /classify, backend/ml.js client, 503 + retry instead of UNKNOWN (DECISIONS 19) | integration failure test; ml test_api | AI demo 7 |
+| Rubric: AI UI, model management, deployment | Kavya | frontend/views/ai, operator enable/disable, ml/Dockerfile + compose + DEPLOYMENT.md | e2e ai.spec.js; ui ai.test.jsx | AI demo 1-7 |
+| Model evaluation | Kavya | ml/evaluate.py (held out via training-recordings.txt), evaluation.json on model card | not run here (dataset not available); reported metrics shown with caveat | AI demo 1 |
 | FR-03 tenant management | Shared | tenant table/status guard and seeded tenants only | schema inspection | Deferred admin UI |
 | FR-10 authenticated MQTT | Siddharth/shared | HTTP device-auth substitute only | HTTP integration | AWS MQTT deferred |
 | FR-17 reports/history | Srija/Yaswanth | history/summary/page CSV implemented; uptime/trends partial | history integration | Data 1; reports deferred |

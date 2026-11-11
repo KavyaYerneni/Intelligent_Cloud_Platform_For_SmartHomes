@@ -12,10 +12,20 @@ You own hosting. No resources, public endpoints, DNS, cloud identities or paid s
 6. Run the complete integration and browser scenario against the hosted environment with disposable data. Verify logout/session expiry, cross-tenant denial, database recovery, offline devices and live reconnect.
 7. Back up PostgreSQL and MongoDB; rehearse restore into a separate environment before claiming the documented RPO/RTO. Configure disk, lag, retry, failed notification and process alerts. Retain audit records according to your selected policy.
 
+## AI inference service on EC2
+
+- Build `ml/Dockerfile` (YAMNet is downloaded at build time, so the running container needs no internet). Image is about 2 GB; the service uses roughly 1 to 1.5 GB of memory after loading YAMNet. A `t3.medium` (4 GB) or larger is a reasonable start for API, worker and inference together; CPU inference takes tens to a few hundred milliseconds per 5-second clip after warm-up.
+- Run it as a separate container with a restart policy. Do **not** publish port 8000 publicly: only the API container should reach it, on a private network or security group. Set the same random `ML_SERVICE_TOKEN` in both containers.
+- Set `ML_SERVICE_URL` for the API and worker to the private address of the service, and keep `MAX_AUDIO_UPLOAD` and the ALB request size limit above your largest clip.
+- Health check: `GET /health` must report `"status":"ok"`; `degraded` means YAMNet or the model did not load (the logs and the AI models page say why).
+- New model version: add `ml/models/human-sounds/<version>/` with `model.keras` and a manifest whose `sha256` matches, rebuild and redeploy. Operators then choose the version per community on the AI models page.
+- Run `ml/evaluate.py` against held-out recordings before a new version goes live, and commit its `evaluation.json` next to the model.
+
 ## Full architecture mapping
 
 | Local implementation | Documented AWS target | Work still required |
 |---|---|---|
+| Python inference service (ml/) | EC2 container or SageMaker endpoint | Private networking, token, memory sizing, latency/load tests |
 | Express API + React build | EC2/ALB/Auto Scaling | TLS, health checks, instance rollout, capacity tests |
 | PostgreSQL | Amazon RDS PostgreSQL | Network, credentials, TLS, backup, Multi-AZ choice |
 | MongoDB container | MongoDB Atlas on AWS | Access policy, region, TLS, retention and backup |

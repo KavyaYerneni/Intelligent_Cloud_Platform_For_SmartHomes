@@ -2,6 +2,7 @@
 
 ## Implemented local prototype
 
+- Real AI component (docs/components/ai-model.md): inference service running the team's trained YAMNet-based audio classifier; live microphone clips become model events and, through the alert rules, alerts; model registry with checksum verification; AI models page with live monitoring, model card, enable/disable, test console and label mapping; dataset replay agent; held-out evaluation script; Docker deployment.
 - Redesigned UI (docs/UI_DESIGN.md): attention-ranked overview with map and house drawer, split alert queue/detail with lifecycle stepper, house/room tree with device drawer, data operations with storage-state drawer, and a simulator with live rule preview. Accessible dialogs replace browser prompts. Server-side device search/filters with totals.
 - Four connected React component screens with API-backed data, map/table alternative, drill-down, loading/error/empty states, scoped context, live reconnection and stale indication.
 - Local expiring authentication, server role/tenant/house checks, device credentials, scope-checked WebSocket subscriptions, audit logs and bounded input/query sizes.
@@ -13,7 +14,7 @@
 ## Deferred or limited — do not claim these as complete
 
 - AWS provisioning and deployment verification are owned by the user. IoT Core MQTT/certificates/shadows, SQS, SNS, Cognito/MFA, S3 media, CloudWatch/CloudTrail, ALB/Auto Scaling, RDS/Atlas managed-service configuration are not integrated.
-- No real AI inference, training, evaluation or model deployment. Designs permit simulated inputs. Simulated provenance is stored; an actual model registry/management/deployment UI is not provided.
+- AI: no training pipeline in the app (training stays in the team's notebooks), no model upload through the UI, and no GPU deployment. The appliance classifier is not deployed (no model file was provided). The audio clip itself is not stored, only the classification and its provenance.
 - Tenant/user invitation, suspension and cross-tenant staff administration UI; contact/subscription/privacy-policy management; per-tenant configurable severity/retention policy UI.
 - Uptime percentage reports, historical trend charts, groupBy summary semantics, cursor pagination and full-dataset exports. Current history uses bounded stable page ordering; data summary supplies event/alert counts only.
 - Separate device configuration delivery transport: simulator reads desired config from heartbeat response. Physical hardware restart/mute execution is not implemented or claimed.
