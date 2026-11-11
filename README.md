@@ -33,6 +33,14 @@ Open the Vite address printed in the terminal (normally localhost:5173). Do not 
 
 ## Demonstrate the integration
 
+**Why new houses show Degraded:** seeded devices start in REGISTERED state with no heartbeat. Starting the app/database containers does not start simulated devices. Use **Open device simulator** on a house, then **Send heartbeats every 10 s**. Keep that simulator page open; after heartbeats stop, the configured timeout (45 seconds by default) correctly changes devices to OFFLINE. A single heartbeat demonstrates recovery but does not keep a device online indefinitely.
+
+**Map tiles:** the app uses the canonical OpenStreetMap tile URL and an origin-only referrer, as required by its tile policy. If the provider is unavailable, blocked error tiles are removed while house markers and the house table remain usable.
+
+**Why new houses show Degraded:** seeded devices start in REGISTERED state with no heartbeat. Starting the app/database containers does not start simulated devices. Use **Open device simulator** on a house, then **Send heartbeats every 10 s**. Keep that simulator page open; after heartbeats stop, the configured timeout (45 seconds by default) correctly changes devices to OFFLINE. A single heartbeat demonstrates recovery but does not keep a device online indefinitely.
+
+**Map tiles:** the app uses the canonical OpenStreetMap tile URL and an origin-only referrer, as required by its tile policy. If the provider is unavailable, blocked error tiles are removed while house markers and the house table remain usable.
+
 The interface is described in [docs/UI_DESIGN.md](docs/UI_DESIGN.md). Sign in as **Cloud operator** (the sign-in page lists every demo role).
 
 1. **Houses & devices**: **Add** a house, **Add room**, **Register device** (microphone). The device drawer opens showing *Waiting for first heartbeat*. Registering the same serial again is refused at the Serial number field with a link to the existing device.

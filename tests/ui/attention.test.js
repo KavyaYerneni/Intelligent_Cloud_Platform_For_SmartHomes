@@ -16,3 +16,9 @@ test('reasons are plain sentences',()=>{
   expect(reason(off,NOW)).toBe('Mic is offline. Last heartbeat 11 min ago.');
   expect(reason(house('N','DEGRADED'),NOW)).toBe('No devices registered yet.');
 });
+
+test('registered devices explain the missing heartbeat, not a container failure',()=>{
+  expect(reason(house('W','DEGRADED',{devices:[{name:'Mic',status:'REGISTERED',lastSeen:null}]}),NOW))
+    .toBe('Mic is registered but awaiting the first heartbeat. Start the simulator to bring it online.');
+  expect(reason(house('W','DEGRADED',{devices:[{name:'Mic',status:'PROVISIONING'}]}),NOW)).toContain('configuration');
+});

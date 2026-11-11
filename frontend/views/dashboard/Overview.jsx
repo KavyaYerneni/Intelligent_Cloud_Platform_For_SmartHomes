@@ -10,7 +10,7 @@ import HouseDrawer from './HouseDrawer';
 import { needsAttention, reason } from './health';
 
 export default function Overview() {
-  const { live, house, go } = useApp();
+  const { live, house, go, user, setHouse } = useApp();
   const [open, setOpen] = useState('');
   const snap = useLoad(() => api('/dashboard/summary', { query: { houseId: house || undefined } }), [house, live.version]);
 
@@ -36,6 +36,9 @@ export default function Overview() {
                   <span className="att-reason">{reason(h)}</span>
                 </button>
                 {h.alerts[0] && <button className="btn btn-sm" onClick={() => go('alerts', h.alerts[0].id)}>Open alert</button>}
+                {['operator', 'technician'].includes(user.role) && h.devices.some(d => d.status === 'REGISTERED' && !d.lastSeen) && (
+                  <button className="btn btn-sm" onClick={() => { setHouse(h.id); go('simulator'); }}>Open device simulator</button>
+                )}
               </li>
             ))}
           </ol>

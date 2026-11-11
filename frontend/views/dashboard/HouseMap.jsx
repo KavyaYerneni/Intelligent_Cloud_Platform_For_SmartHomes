@@ -17,8 +17,16 @@ export default function HouseMap({ houses, selected, onSelect }) {
   useEffect(() => {
     const m = L.map(node.current, { zoomControl: true, attributionControl: true }).setView([37.3382, -121.8863], 12);
     map.current = m;
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors', maxZoom: 19 })
-      .on('tileerror', () => setTilesFailed(true)).addTo(m);
+    const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19, referrerPolicy: 'strict-origin',
+    });
+    tiles.on('tileerror', () => {
+      setTilesFailed(true);
+      // Do not leave provider error images filling the map or keep requesting
+      // blocked tiles. Preserve interactive house markers and the table.
+      if (m.hasLayer(tiles)) m.removeLayer(tiles);
+    }).addTo(m);
     layer.current = L.layerGroup().addTo(m);
     api('/dashboard/preferences').then(p => { if (p.saved && p.center) { m.setView(p.center, p.zoom); fitted.current = true; } }).catch(() => {});
     return () => m.remove();
@@ -34,7 +42,9 @@ export default function HouseMap({ houses, selected, onSelect }) {
         icon: L.divIcon({ className: 'pin-wrap', iconSize: [36, 44], iconAnchor: [18, 42],
           html: `<span class="pin tone-${l.tone} ${h.id === selected ? 'pin-on' : ''}"><span class="mark mark-${l.shape}"></span></span>` }),
       }).addTo(layer.current);
-      marker.bindTooltip(`${h.name}: ${l.label}`, { direction: 'top', offset: [0, -40] });
+      const label = document.createElement('span');
+      label.textContent = `${h.name}: ${l.label}`;
+      marker.bindTooltip(label, { direction: 'top', offset: [0, -40] });
       marker.on('click', () => pick.current(h.id));
     }
     if (!fitted.current && houses.length) {

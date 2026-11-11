@@ -22,5 +22,10 @@ export function reason(h, now = Date.now()) {
   }
   if (!h.devices.length) return 'No devices registered yet.';
   const waiting = h.devices.filter(d => d.status !== 'ONLINE');
+  if (waiting.every(d => d.status === 'REGISTERED' && !d.lastSeen)) {
+    return `${waiting.length === 1 ? waiting[0].name + ' is' : waiting.length + ' devices are'} registered but awaiting the first heartbeat. Start the simulator to bring ${waiting.length === 1 ? 'it' : 'them'} online.`;
+  }
+  if (waiting.some(d => d.status === 'PROVISIONING')) return 'Device configuration is waiting for acknowledgment. Send a simulator heartbeat to apply it.';
+  if (waiting.some(d => d.status === 'MAINTENANCE')) return 'A device is in maintenance and is not reporting as online.';
   return `${waiting.length === 1 ? waiting[0].name + ' is' : waiting.length + ' devices are'} not reporting yet.`;
 }
