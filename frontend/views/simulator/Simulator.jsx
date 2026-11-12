@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { api, newId } from '../../lib/api';
 import { useLoad } from '../../lib/useLoad';
 import { ago, clock, human } from '../../lib/format';
@@ -9,6 +9,9 @@ import { useApp } from '../../app/context';
 import { preview, ruleText } from './preview';
 
 const HEARTBEAT_EVERY = 10;
+// Kept outside the component so "Replay last event" still works after visiting
+// another page (for example Go to alerts) and coming back.
+const lastSent = { current: null };
 
 export default function Simulator() {
   const { house, houses, live, go } = useApp();
@@ -21,7 +24,7 @@ export default function Simulator() {
   const [tick, setTick] = useState(HEARTBEAT_EVERY);
   const [type, setType] = useState('smoke_alarm');
   const [confidence, setConfidence] = useState(0.94);
-  const last = useRef(null);
+  const last = lastSent;
   const d = devices.data?.find(x => x.id === deviceId);
 
   useEffect(() => { if (devices.data && !devices.data.some(x => x.id === deviceId)) setDeviceId(devices.data[0]?.id || ''); }, [devices.data]); // eslint-disable-line react-hooks/exhaustive-deps
