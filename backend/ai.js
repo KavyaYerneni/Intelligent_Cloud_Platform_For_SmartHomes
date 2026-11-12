@@ -21,6 +21,8 @@ import {broadPrediction,broadEventType} from './audio-routing.js';
 
 export const ai=Router();
 export const AUDIO_MODEL=()=>process.env.AUDIO_MODEL_NAME||'human-sounds';
+export const ANIMAL_MODEL=()=>process.env.ANIMAL_MODEL_NAME||'animal-sounds';
+export const APPLIANCE_MODEL=()=>process.env.APPLIANCE_MODEL_NAME||'appliance-sounds';
 const rawAudio=express.raw({type:['audio/wav','audio/x-wav','audio/wave','audio/vnd.wave','application/octet-stream'],limit:process.env.MAX_AUDIO_UPLOAD||'6mb'});
 const audioBody=req=>{if(!Buffer.isBuffer(req.body)||!req.body.length)fail(400,'EMPTY_AUDIO','Send the WAV file as the request body with Content-Type: audio/wav.');return req.body;};
 
@@ -74,10 +76,20 @@ ai.post('/devices/:deviceId/audio',deviceActor,rawAudio,async(req,res)=>{
  }
  const occurredAt=req.headers['x-captured-at']?new Date(validTime(req.headers['x-captured-at'])).toISOString():new Date().toISOString();
  const wav=audioBody(req);
- const classifier=z.enum(['human','general']).default('human').parse(req.headers['x-audio-classifier']);
+ const classifier=z.enum(['human','animal','appliance','general']).default('human').parse(req.headers['x-audio-classifier']);
 
  let active;
- try{active=await activeModel(d.tenant_id);}
+ try{
+  if(classifier==='animal'||classifier==='appliance'){
+   const {items,embedder}=await ml.listModels();
+   const name=classifier==='animal'?ANIMAL_MODEL():APPLIANCE_MODEL();
+   const loaded=items.filter(m=>m.name===name&&m.loaded);
+   const chosen=newest(loaded);
+   active={name,version:chosen?.version??null,enabled:true,manifest:chosen??null,embedder,updatedBy:null,updatedAt:null,versions:items.filter(m=>m.name===name)};
+  } else {
+   active=await activeModel(d.tenant_id);
+  }
+ }
  catch(e){await logInference({...base,status:'FAILED',errorCode:e.code});fail(503,e.code||'AI_UNAVAILABLE',`${e.message} Keep the clip and retry with the same X-Event-Id.`);}
  if(!active.version){await logInference({...base,status:'FAILED',errorCode:'MODEL_NOT_LOADED'});fail(503,'MODEL_NOT_LOADED','No version of the audio model is loaded in the inference service.');}
  if(!active.enabled){await logInference({...base,model:active,status:'REJECTED',errorCode:'MODEL_DISABLED'});fail(409,'MODEL_DISABLED','Audio inference is disabled for your community. An operator can enable it on the AI models page.');}

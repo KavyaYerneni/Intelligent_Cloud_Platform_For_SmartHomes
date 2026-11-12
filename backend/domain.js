@@ -34,6 +34,20 @@ export const AI_LABEL_MAP={
  'Pouring water':{type:'normal_activity_sound',why:'Everyday sound'},
  'Snoring':{type:'normal_activity_sound',why:'Everyday sound'},
  'Walk, footsteps':{type:'normal_activity_sound',why:'Everyday sound; shows the resident is active'},
+ 'Cats':{type:'unusual_sound',why:'Animal sound detected indoors'},
+ 'Dogs':{type:'unusual_sound',why:'Animal sound detected indoors'},
+ 'Frogs':{type:'unusual_sound',why:'Animal sound detected indoors'},
+ 'Rooster':{type:'unusual_sound',why:'Animal sound detected indoors'},
+ 'alarm_bell_ringing':{type:'unusual_sound',why:'Alarm or bell detected'},
+ 'blender':{type:'normal_activity_sound',why:'Kitchen appliance in use'},
+ 'clock_tick':{type:'normal_activity_sound',why:'Everyday background sound'},
+ 'electric_shaver_toothbrush':{type:'normal_activity_sound',why:'Everyday grooming activity'},
+ 'frying':{type:'normal_activity_sound',why:'Cooking activity detected'},
+ 'microwave_oven':{type:'normal_activity_sound',why:'Kitchen appliance in use'},
+ 'printer':{type:'normal_activity_sound',why:'Office appliance in use'},
+ 'telephone':{type:'unusual_sound',why:'Phone ringing may need attention'},
+ 'toilet_flush':{type:'normal_activity_sound',why:'Everyday activity'},
+ 'vacuum_cleaner':{type:'normal_activity_sound',why:'Cleaning activity detected'},
 };
 export function eventTypeForLabel(label){return AI_LABEL_MAP[label]?.type??null;}
 const NO_ALERT={severity:null,window:0,explanation:'No alert threshold met',model:'simulated-audio'};

@@ -1,0 +1,43 @@
+{
+  "name": "appliance-sounds",
+  "version": "1.0.0",
+  "displayName": "Appliance sound classifier",
+  "description": "Classifies a short audio clip into 10 household appliance sound classes. YAMNet produces a 1024-value embedding per 0.48 s frame; the frames are averaged and a small dense network trained by the team predicts the class.",
+  "file": "model.keras",
+  "sha256": "490f0237b18c16ee387acba32717be31cdf12c0c4193a1884937399310ac8dd1",
+  "framework": "Keras on TensorFlow",
+  "architecture": "Input(1024) > Dense(512, relu) > Dropout(0.3) > Dense(256, relu) > Dropout(0.3) > Dense(10, softmax)",
+  "backbone": {
+    "name": "YAMNet",
+    "handle": "https://tfhub.dev/google/yamnet/1",
+    "publisher": "Google (AudioSet, 521 classes)",
+    "embeddingSize": 1024,
+    "use": "Frame embeddings averaged over the clip; YAMNet itself is not retrained."
+  },
+  "input": {
+    "format": "WAV (PCM 8/16/32-bit or float)",
+    "sampleRate": 16000,
+    "channels": 1,
+    "normalisation": "16-bit samples divided by 32767",
+    "resampling": "scipy.signal.resample (FFT)",
+    "minSeconds": 0.5,
+    "maxSeconds": 30
+  },
+  "classes": [
+    "alarm_bell_ringing",
+    "blender",
+    "clock_tick",
+    "electric_shaver_toothbrush",
+    "frying",
+    "microwave_oven",
+    "printer",
+    "telephone",
+    "toilet_flush",
+    "vacuum_cleaner"
+  ],
+  "training": {
+    "source": "Programs/appliance_audio_classifier.py",
+    "data": "audio_datasets/appliance_audio — YAMNet auto-labelled, 100 clips across 10 classes",
+    "split": "70/30 train/test, balanced via upsampling"
+  }
+}

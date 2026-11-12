@@ -15,7 +15,7 @@ import {dashboard} from './dashboard.js';
 import {attachLive} from './live.js';
 import {ai} from './ai.js';
 export const app=express();
-app.use(helmet({contentSecurityPolicy:{directives:{'img-src':["'self'",'data:','https://tile.openstreetmap.org'],'connect-src':["'self'",'ws:','wss:','https://tile.openstreetmap.org'],'script-src':["'self'"],'style-src':["'self'","'unsafe-inline'",'https://fonts.googleapis.com'],'font-src':["'self'",'https://fonts.gstatic.com']}}}));
+app.use(helmet({strictTransportSecurity:false,contentSecurityPolicy:{directives:{upgradeInsecureRequests:null,'img-src':["'self'",'data:','https://tile.openstreetmap.org'],'connect-src':["'self'",'ws:','wss:','https://tile.openstreetmap.org'],'script-src':["'self'"],'style-src':["'self'","'unsafe-inline'",'https://fonts.googleapis.com'],'font-src':["'self'",'https://fonts.gstatic.com']}}}));
 // Browser tiles require a truthful Referer. Send only the origin, never house
 // filters, page paths or credentials. Helmet's default no-referrer blocks OSM.
 app.use(helmet.referrerPolicy({policy:'strict-origin'}));
